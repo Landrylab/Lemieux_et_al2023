@@ -312,10 +312,8 @@ compare_means(area~Bait.Standard_name, exbiais)
 sf2b <- 
   ggplot(exbiais)+
   geom_violin(aes(y = log2.area, x = Bait.Standard_name, 
-                  color = Bait.Standard_name, fill = Bait.Standard_name), 
-              alpha = 0.4)+
- scale_color_manual(values = c( '#3366CC', 'orangered'))+
-  scale_fill_manual(values = c( '#3366CC', 'orangered'))+
+                 fill = Bait.Standard_name), 
+              fill = 'grey60',alpha = 0.4, color = 'grey20')+
   stat_compare_means(aes(x = Bait.Standard_name, y = log2.area), 
                      method = 'wilcox.test', size = 4.5, label.x = 1)+
   ylim(0,15)+

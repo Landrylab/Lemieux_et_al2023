@@ -35,22 +35,24 @@ p3 <- readRDS(file = '~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig2
 SuppFigG <- readRDS(file = '~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig2G.rds')
 
 
-# Correlation solid vs liquid PCA results
-# Read Supplementary Data1 sheet4 : liquid PCA result analyzed with growthcurver
+# Read Table S4 with liquid validation data
 gc_out <- 
-  readRDS('~/ancSH3_paper/SupplementaryMaterial/Data/SupplementaryData1_liquidPCA.rds')
+  read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS4.csv')[, -1]
+
+# compute median PPI score for liquid PCA
 
 gc_out %<>%
-  dplyr::group_by(Prey.Systematic_name, sh3_sequence, Bait.Standard_name) %>%
-  dplyr::mutate(n(), 'PPI_score_gc' = median(PCA_score_gc, na.rm = T))
+  dplyr::group_by(Prey.Systematic_name, sh3_sequence, Bait.Standard_name)%>%
+  dplyr::mutate(n(), med.PPI_score_gc = median(PPI_score_gc))
 
-# Read Supplementary Data1 shee14 : complete paralog PCA result to compare 
+
+# Read TableS1 : complete paralog PCA result to compare 
 # with liquid PCA result
 solid_MTX <- 
-  readRDS( file = '~/ancSH3_paper/SupplementaryMaterial/Data/SupplementaryData1_complete_paralog.rds')
+  read.csv(file = '~/ancSH3_paper/SupplementaryMaterial/TableS1.csv')[, -1]
 
 solid_MTX$sh3_sequence <- 
-as.character(solid_MTX$sh3_sequence)
+  as.character(solid_MTX$sh3_sequence)
 
 solid_MTX[(grepl(solid_MTX$sh3_sequence, pattern = 'swap-optMyo3')), "sh3_sequence"] <- 'optMyo3'
 solid_MTX[(grepl(solid_MTX$sh3_sequence, pattern = 'swap-optMyo5')), "sh3_sequence"] <- 'optMyo5'
@@ -61,13 +63,13 @@ comp_MTX <-
         by = c('Prey.Systematic_name', 'sh3_sequence', 'Bait.Standard_name'),
         all= F, 
         sort = F)
-
+# Correlation solid vs liquid PCA results
 # Remove non inoculated well data
-comp_MTX <- comp_MTX[!(comp_MTX$PPI_score>0.75 &comp_MTX$PPI_score_gc <10),]
+comp_MTX <- comp_MTX[!(comp_MTX$med.PPI_score>0.75 & comp_MTX$med.PPI_score_gc < 10),]
 
-# keep only significant columns
+# keep only interesting columns
 comp_MTX <- 
-  unique(comp_MTX[, c(1:3, 17:19)])
+  unique(comp_MTX[, c(1:3, 15:17)])
 
 comp_MTX <- na.omit(comp_MTX)
 
@@ -94,10 +96,10 @@ comp_MTX[(comp_MTX$sh3_sequence =='SH3-depleted'), "exp"] <- 'SH3-depleted'
 # SuppFig2G
 p7 <- 
 ggplot(unique(comp_MTX))+
-  geom_point(aes(PPI_score_gc, PPI_score, color= exp, shape= Bait.Standard_name), size = 2.5, alpha = 0.8)+
-  stat_cor(aes(PPI_score_gc, PPI_score, color = exp), method = 'spearman', size = 4.5, cor.coef.name = c('r'), 
+  geom_point(aes(med.PPI_score_gc, med.PPI_score, color= exp, shape= Bait.Standard_name), size = 2.5, alpha = 0.8)+
+  stat_cor(aes(med.PPI_score_gc, med.PPI_score, color = exp), method = 'spearman', size = 4.5, cor.coef.name = c('r'), 
            label.y = c(0.05, 0.15, 0.25, 0.35), label.x = c(28))+
-  stat_cor(aes(PPI_score_gc, PPI_score), method = 'spearman', size = 4.5, cor.coef.name = c('r'))+
+  stat_cor(aes(med.PPI_score_gc, med.PPI_score), method = 'spearman', size = 4.5, cor.coef.name = c('r'))+
   scale_color_manual(values = c('#551A8B', '#3366CC','grey20', 'orangered'))+
   theme_bw()+
   ylim(0,1)+
@@ -132,10 +134,26 @@ exp_collapsed <-
 exp_collapsed$DHFR12.strain <- 
   firstup(exp_collapsed$DHFR12.strain)
 # Read the file with the preys used as abundance controls
-abondance_c <- read.csv('~/ancSH3_paper/SupplementaryMaterial/Data/Abundance_controls.csv')
+abondance_c <-
+  c(
+    "YBL032W",
+    "YCR002C",
+    "YCR088W"   ,
+    "YER165W"   ,
+    "YER177W"   ,
+    "YGL234W" ,
+    "YGR162W",
+    "YGR192C",
+    "YGR240C",
+    "YHL034C" ,
+    "YHR064C ",
+    "YLL026W" ,
+    "YNL209W",
+    "YPL240C"
+  )
 
 # Identify the comparison qith the abundance control information
-exp_collapsed[exp_collapsed$orf %in% abondance_c$prot_removed, "recovered"] <-'Abundance control' 
+exp_collapsed[exp_collapsed$orf %in% abondance_c, "recovered"] <-'Abundance control' 
 exp_collapsed$DHFR12.strain <- 
   firstup(exp_collapsed$DHFR12.strain)
 
@@ -147,7 +165,7 @@ exp_collapsed <-
   exp_collapsed[!is.na(exp_collapsed$orf), ]
 
 # proportion of detected PPI compared to the reference database
-118/(89+118)
+120/(89+120)
 
 # Verify number of new interaction excluding abundance control
 exp_collapsed[exp_collapsed$method_list == 'Not reported in BioGrid', "method_list"] <- 'Not reported in BioGRID'
@@ -216,7 +234,7 @@ pval <-
 
 # SuppFig2D
 p3.1 <- 
-ggplot(subdata[subdata$recovered == 'Abundance control', ])+
+ggplot(subdata[subdata$recovered == 'Abundance control' & subdata$sh3_sequence == 'extantSH3', ])+
   geom_boxplot(aes(x = as.factor(Bait.Standard_name), 
                   y =PPI_score), width = 0.3, alpha = 0.3, color = 'grey30', fill = 'grey65', outlier.color = 'transparent')+
   geom_jitter(aes(x = as.factor(Bait.Standard_name), 

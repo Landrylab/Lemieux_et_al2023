@@ -29,7 +29,7 @@ udata <-
 # Create the dataframe with estradiol concentration as columns
 
 difdata <- 
-  pivot_wider(udata, names_from = `estradiol`, values_from = PPI_score, names_sort = T)
+  pivot_wider(udata, names_from = `estradiol`, values_from = med.PPI_score, names_sort = T)
 
 # Keep data of delta motif preys
 ddata <- 
@@ -67,7 +67,7 @@ library(dplyr)
 
 z %>%
   dplyr::group_by(Prey.Standard_name) %>%
-  mutate(est_prey = median(max_dif)) -> z
+  dplyr::mutate(est_prey = median(max_dif)) -> z
 
 
 # Make sure that the median [estradiol] corresponds to
@@ -120,7 +120,7 @@ merge(difdata,
 
 # Compute the difference between wt.prey and dmotif.prey scores
 dif_pxxp %<>%
-  mutate(dif_motif = PPI_score.wt -PPI_score.delta)
+  mutate(dif_motif = med.PPI_score.wt -med.PPI_score.delta)
 
 write.csv2(dif_pxxp, file = '~/Maitrise/PCA_DHFR_array/PCA_SH3_libre/ppi_score_est_adj.csv', 
            row.names = F, fileEncoding = 'UTF-8')
@@ -144,8 +144,8 @@ cdata <-
 # Verify the noise in the experiment obtain with the 
 # emptyLP tagged in C and in N
 difdata[difdata$sh3_sequence == 'emptyLP', ] %>%
-  group_by(DHFR12_tag) %>%
-  mutate(noise.tag = median(PPI_score, na.rm = T))
+  dplyr::group_by(DHFR12_tag) %>%
+  dplyr::mutate(noise.tag = median(med.PPI_score, na.rm = T))
 #noise C tag = 0.0388 N tag 0.0687
 
 # Prepare cdata to format the figure
@@ -159,7 +159,7 @@ cdata$estradiol.all <-
 
 # Compare the noise in the experiment with the 
 # emptyLP tagged in C and in N
-compare_means(PCA_score ~ DHFR12_tag, cdata[cdata$sh3_sequence == 'emptyLP', c(3,4,19)])
+compare_means(PPI_score ~ DHFR12_tag, cdata[cdata$sh3_sequence == 'emptyLP', c(3,4,19)])
 #.y.       group1 group2        p   p.adj p.format p.signif method  
 #<chr>     <chr>  <chr>     <dbl>   <dbl> <chr>    <chr>    <chr>   
 #  1 PCA_score C-tag  N-tag  1.06e-11 1.1e-11 1.1e-11  ****     Wilcoxon
@@ -173,7 +173,7 @@ ggplot(cdata[!cdata$motif_deletion.all, ])+
   facet_grid(vars(Prey.Standard_name), vars(DHFR12_tag))+
   geom_vline(aes(xintercept = as.numeric(paste(estradiol.cor))), alpha = 0.4, size = 2)+
   geom_line(aes(x = as.numeric(estradiol.all),
-                y = PPI_score.all, 
+                y = med.PPI_score.all, 
                 color = sh3_sequence,
                 group = sh3_sequence), size =0.8)+
   scale_color_viridis(option = 'inferno', discrete = T)+
@@ -201,12 +201,13 @@ ggplot(cdata[!cdata$motif_deletion.all, ])+
 
 # Supplementary Figure 5B : Comparison of PCA score from complete paralog vs free sh3 
 
-# Import and adapt PCA complete paralog
-dcomp_para <- readRDS('~/ancSH3_paper/SupplementaryMaterial/Data/SupplementaryData1_motif_confirmation_PCA.rds')
+# Import and adapt PCA motif validation
+dcomp_para <- read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS2.csv')[, -1]
+
 dcomp_para <- 
   pivot_wider(unique(dcomp_para[dcomp_para$sh3_sequence != 'UNI1' , c(2,3,4,5, 20)]), 
                           names_from = motif_deletion, 
-                          values_from = PPI_score, names_prefix = c('extantPrey', 'difmotif'))
+                          values_from = med.PPI_score, names_prefix = c('extantPrey', 'difmotif'))
 pcomp <- 
   pivot_wider(dcomp_para[dcomp_para$sh3_sequence %in% c('optMyo3', 'optMyo5') &
                            dcomp_para$Prey.Standard_name %in% difdata$Prey.Standard_name, c(1,3,4)], 
@@ -218,7 +219,7 @@ pcomp$exp <- 'paralogue'
 # adapt data from free sh3 PCA
 comp <- 
   pivot_wider(difdata, 
-              values_from = PPI_score, 
+              values_from = med.PPI_score, 
               names_from = sh3_sequence)
 
 comp <- comp[comp$DHFR12_tag == 'C-tag', c("Prey.Standard_name", "optMyo3", "optMyo5")]
@@ -292,11 +293,11 @@ ggplot(comp[comp$sh3_sequence %in% c('optMyo3', 'optMyo5'), ],
   stat_cor(method = 'spearman', cor.coef.name = c('r'), size = 4)+
   ylab(expression(atop(paste(Delta,'(WT prey - motif',Delta, ' prey)'), paste('free SH3 med. PPI score'))))+
   xlab(expression(paste(Delta,'(WT prey - motif',Delta, ' prey) paralogue med. PPI score')))+
-  geom_point(aes(color = Prey.Standard_name), size = 2.5)+
+  geom_point(aes(), color = 'grey20' , size = 2.5)+
   xlim(-0.1, 0.6)+
   ylim(-0.1, 0.6)+
   theme_bw()+
-  scale_color_viridis(option = 'mako', discrete = T)+
+  #scale_color_viridis(option = 'mako', discrete = T)+
   geom_text_repel(
     aes(label = Prey.Standard_name),
     seed= 32,
@@ -333,9 +334,11 @@ ggplot(comp[comp$sh3_sequence %in% c('optMyo3', 'optMyo5'), ],
 
 
 #heatmap ppi score for mat supp
-compare_means(PPI_score ~ sh3_sequence, data = difdata[difdata$sh3_sequence != 'emptyLP' &
-                                                      difdata$DHFR12_tag == 'C-tag', ], 
+compare_means(med.PPI_score ~ sh3_sequence, data = difdata[difdata$sh3_sequence != 'emptyLP' &
+                                                      difdata$DHFR12_tag == 'N-tag', ], 
               p.adjust.method = 'BH', method = 'kruskal.test')
+
+
 # difference non-significant between SH3s
 
 FigSuppD <- 
@@ -350,7 +353,7 @@ ggplot(difdata) +
   geom_tile(aes(
     x = sh3_sequence,
     y = Prey.Standard_name ,
-    fill = (PPI_score)
+    fill = (med.PPI_score)
   )) +
   scale_x_discrete(limits = c('emptyLP', 'AncC', 'AncB', 'AncA', 'DupSH3', 'optMyo3', 'optMyo5'))+
   scale_fill_viridis(option = 'mako')+
@@ -386,7 +389,7 @@ figdata$sh3_sequence<-
          levels = c( 'AncC', 'optMyo3', 'optMyo5'))
 
 Fig5C <- 
-ggplot(figdata, aes(Prey.Standard_name, PCA_score))+
+ggplot(figdata, aes(Prey.Standard_name, PPI_score))+
   geom_boxplot(aes(fill = sh3_sequence), width = 0.5, alpha = 0.8)+
   scale_fill_manual(values= c('#551A8B', '#3366CC', 'orangered'))+
   stat_compare_means(aes(group = sh3_sequence), label = 'p.signif', label.y = 0.92)+
@@ -443,6 +446,7 @@ plot_grid(Fig5SuppC+theme(legend.text = element_text(size = 14),
 tleft <- 
 plot_grid(FigSuppA+ylab('PPI score replicate 2')+
             xlab('PPI score replicate 1')+
+            geom_abline(slope = 1, color = 'orangered')+
             theme(legend.text = element_text(size = 14),
                            legend.title = element_text(size = 16),
                            axis.title = element_text(size = 14),
@@ -462,7 +466,7 @@ plot_grid(tleft, Fig5SuppB+theme(legend.text = element_text(size = 14),
           label_fontface = 'plain', label_size = 16)
 
 
-ggsave('~/ancSH3_paper/SupplementaryMaterial/SupplementaryFigure5.png', width = 18, height = 14)
+ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS5.png', width = 18, height = 14)
 
 
 
