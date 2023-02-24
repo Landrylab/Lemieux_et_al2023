@@ -62,12 +62,12 @@ motif_conf <-
 
 # Figure 1B: SH3-depletion effect on PPI score
 stuf <- subset(data,
-               subset = sh3_sequence %in% c('extantMyo3', 'extantMyo5', 'SH3-depleted'))
+               subset = sh3_sequence %in% c('optMyo3', 'optMyo5', 'SH3-depleted'))
 
 stuf$sh3_sequence <- 
   factor(stuf$sh3_sequence, 
-         levels = c('extantMyo3', 'extantMyo5', 'SH3-depleted'), 
-         labels = c('WT', 'WT', 'SH3-depleted'))
+         levels = c('optMyo3', 'optMyo5', 'SH3-depleted'), 
+         labels = c('opt', 'opt', 'SH3-depleted'))
 
 
 wilcox.test(PPI_score ~ sh3_sequence, stuf)
@@ -84,8 +84,8 @@ data_stuf <-
 # column with label used in plots
 data_stuf$label <- ''
  
-data_stuf[data_stuf$SH3_dep_WT | data_stuf$`Low_Rep_SH3-depleted`, "label"] <-
- data_stuf[data_stuf$SH3_dep_WT | data_stuf$`Low_Rep_SH3-depleted`, "Prey.Standard_name"]
+data_stuf[data_stuf$SH3_dep_opt | data_stuf$`Low_Rep_SH3-depleted`, "label"] <-
+ data_stuf[data_stuf$SH3_dep_opt | data_stuf$`Low_Rep_SH3-depleted`, "Prey.Standard_name"]
 
 
 pvalm3 <- 
@@ -100,20 +100,20 @@ pvalm5 <-
 
 # Figure 1C
 p1 <-
-  ggplot(data_stuf[!data_stuf$`Low_Rep_SH3-depleted`, ], aes(med.PPI_score_WT, `med.PPI_score_SH3-depleted`)) +
+  ggplot(data_stuf[!data_stuf$`Low_Rep_SH3-depleted`, ], aes(med.PPI_score_opt, `med.PPI_score_SH3-depleted`)) +
   facet_grid(cols = vars(Bait.Standard_name), scales = 'free') +
-  geom_point(aes(color = SH3_dep_WT, shape = `Low_Rep_SH3-depleted`),size = 3) +
+  geom_point(aes(color = SH3_dep_opt, shape = `Low_Rep_SH3-depleted`),size = 3) +
   geom_point(data = data_stuf[data_stuf$`Low_Rep_SH3-depleted`, ],
-             aes(med.PPI_score_WT, `med.PPI_score_SH3-depleted`, shape = `Low_Rep_SH3-depleted`), size = 3, color = 'grey20')+   
+             aes(med.PPI_score_opt, `med.PPI_score_SH3-depleted`, shape = `Low_Rep_SH3-depleted`), size = 3, color = 'grey20')+   
   theme_bw() +
-  stat_cor(aes(med.PPI_score_WT, `med.PPI_score_SH3-depleted`, color = SH3_dep_WT), size = 5, method = 'spearman', 
+  stat_cor(aes(med.PPI_score_opt, `med.PPI_score_SH3-depleted`, color = SH3_dep_opt), size = 5, method = 'spearman', 
            cor.coef.name = c('r')) +
   ylab('med. SH3-depleted PPI score') +
-  xlab('med. WT PPI score') +
+  xlab('med. optSH3 PPI score') +
   xlim(0,1)+
   ylim(0,1)+
   geom_text_repel(
-    data = data_stuf,
+    data = data_stuf[data_stuf$Prey.Standard_name %in% motif_conf,],
     aes(label = label),
     color = 'black',
     size = 4,
@@ -127,6 +127,7 @@ p1 <-
   ) +
   scale_color_manual(values = c('#CCCCCC', 'darkcyan'), labels = c('SH3-independent', 'SH3-dependent')) +
   theme(legend.position = 'bottom',
+        legend.margin=margin(-10, 0, 0, 0),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         strip.text.x = element_text(size=16), 
@@ -143,7 +144,7 @@ pred_motif <-
   read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS5.csv')[, -1]
 
 data_stuf %<>% 
-  mutate(deltaPPI = med.PPI_score_WT - `med.PPI_score_SH3-depleted`)
+  mutate(deltaPPI = med.PPI_score_opt - `med.PPI_score_SH3-depleted`)
 
 pred_motif$Prey.Standard_name <- 
   firstup(pred_motif$Prey.Standard_name)
@@ -170,7 +171,7 @@ ggplot(pred_motif,
   stat_cor(size = 5, method = 'spearman', cor.coef.name = c('r'))+
   scale_color_gradientn(colours = c('#0B0405FF', '#2E1E3CFF', '#413D7BFF', '#37659EFF', '#348FA7FF', '#40B7ADFF', '#8AD9B1FF', '#DEF5E5FF'),
                         trans = 'log', breaks=c(0,0.001, 0.01,0.1, 1))+
-  ylab(bquote(atop(''*Delta~'('~PPI[WT]~ - ~PPI[depleted]~')', 'med. score')))+
+  ylab(bquote(atop(''*Delta~'('~PPI[opt]~ - ~PPI[depleted]~')', 'med. score')))+
   xlab('Max MSS score')+
   ylim(0,1)+
   xlim(0,1)+
@@ -191,6 +192,7 @@ ggplot(pred_motif,
   theme(legend.position = 'bottom',
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
+        legend.margin=margin(-10, 0, 0, 0),
     strip.text.x = element_blank(), 
     axis.text = element_text(size =12),
     legend.text = element_text(size = 12), 
@@ -247,6 +249,7 @@ ggplot(data_fig, aes(x=Prey.Standard_name, y = PPI_score,
         strip.text.x = element_blank(), 
         axis.text.x = element_text(size =14, hjust = 1, angle=30),
         axis.text.y = element_text(size =14),
+        legend.margin=margin(-10, 0, 0, 0),
         legend.text = element_text(size = 16), 
         axis.title = element_text(size =16), 
         panel.grid.major = element_blank(), 
@@ -273,13 +276,12 @@ left <- plot_grid(p1+theme(legend.text = element_text(size = 14),
                   p2+theme(legend.text = element_text(size = 12),
                            legend.title = element_text(size = 16),
                            axis.title = element_text(size = 14),
-                           axis.text = element_text(size =12),
-                           axis.title.y = element_text(hjust = 0)), 
+                           axis.text = element_text(size =12)), 
                   p3+theme(legend.text = element_text(size = 14),
                            legend.title = element_text(size = 16),
                            axis.title = element_text(size = 14),
                            axis.text = element_text(size =12)), 
-                  nrow = 3, labels = c('C', 'D', 'E'), rel_heights = c(-1,-1,-1),
+                  nrow = 3, labels = c('B', 'D', 'E'), rel_heights = c(-1,-1,-1),
           align = 'v', axis = 'lr', label_size = 16, label_fontface = 'plain')
 
 
@@ -287,9 +289,9 @@ b <- ggdraw()+
   draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig1B.png')
 
 right <- 
-  plot_grid(a, b, 
-                   labels = c('A', 'B'), 
-                   rel_heights = c(4, 1), 
+  plot_grid(b, a, 
+                   labels = c('A', 'C'), 
+                   rel_heights = c(1, 4), 
                    label_size = 16, label_fontface = 'plain', 
             ncol =1)
 
@@ -298,9 +300,9 @@ plot_grid(right, left,
           label_size = 16, label_fontface = 'plain', 
           align = 'h',axis = 't', rel_widths = c(1, 1.1))
 
-ggsave('~/ancSH3_paper/Figure1.png', 
+ggsave('~/ancSH3_paper/Figure1.svg', 
        height = 13, width = 15)
-# Panel labels (A, B) are moved manually on Inkscape 
+
 
 
 # Supplementary Figure 3C : proline motif impact on the 
@@ -452,14 +454,14 @@ sf3b <-
 # Supplementary Figure 3A : correlation PPI score and prediction score
 sf3a <- 
 ggplot(pred_motif,
-       aes(Max_MSS, med.PPI_score_WT, color = `p-value`))+
+       aes(Max_MSS, med.PPI_score_opt, color = `p-value`))+
   facet_grid(cols = vars(Bait.Standard_name))+
   theme_bw()+
   geom_point(size = 3)+
   stat_cor(size = 5, method = 'spearman', cor.coef.name = c('r'))+
   scale_color_gradientn(colours = c('#0B0405FF', '#2E1E3CFF', '#413D7BFF', '#37659EFF', '#348FA7FF', '#40B7ADFF', '#8AD9B1FF', '#DEF5E5FF'),
                         trans = 'log', breaks=c(0,0.001, 0.01,0.1, 1))+
-  ylab('med. PPI score')+
+  ylab('med.optSH3 PPI score')+
   xlab('Max MSS score')+
   ylim(0,1)+
   xlim(0,1)+
@@ -476,16 +478,17 @@ ggplot(pred_motif,
                   min.segment.length = 0, 
                   nudge_x = 0.07
   )+
-  
-  theme(legend.position = 'right',
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        strip.text.x = element_blank(), 
-        axis.text = element_text(size =12),
-        legend.text = element_text(size = 14), 
-        axis.title = element_text(size =14), 
-        legend.title = element_text(size =16), 
-        legend.key.width = unit(1, 'cm'))
+  theme(legend.position = 'bottom',
+              panel.grid.major = element_blank(), 
+              panel.grid.minor = element_blank(),
+              legend.margin=margin(-10, 0, 0, 0),
+              strip.text.x = element_text(size =16), 
+              axis.text = element_text(size =12),
+              legend.text = element_text(size = 12), 
+              axis.title = element_text(size =14), 
+              legend.title = element_text(size =16), 
+              legend.key.height  = unit(0.4, 'cm'),
+              legend.key.width = unit(1.2, 'cm'))
 
 # Assembly of Figure S3
 
@@ -504,7 +507,7 @@ side <-
 plot_grid(side, 
           sf3c+theme(legend.position = 'bottom'),
           ncol = 2, label_size = 16, label_fontface = 'plain', 
-          labels = c('', 'C'), rel_widths = c(1, 1))
+          labels = c('', 'C'), rel_widths = c(1, 0.9))
 
 
 ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS3.png', 

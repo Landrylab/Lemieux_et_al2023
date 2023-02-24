@@ -1,5 +1,5 @@
 ######################################
-## Figure 5 & SuppFigure5           ##
+## Figure 5 & FigureS5              ##
 ## author : Pascale Lemieux         ##
 ## Date : 2023-01-16                ##
 ######################################
@@ -16,15 +16,31 @@ library(cowplot)
 ## Analysis of free SH3 PCA :
 
 # find best concentration for each prey and keep the PPI scores
-# at those concentrations
+# at those concentrations 
+# output file from PCA_analysis_freeSH3.R
 sdata <- 
-  readRDS('~/ancSH3_paper/SupplementaryMaterial/Data/SupplementaryData1_freeSH3.rds')
+  readRDS('~/ancSH3_paper/SupplementaryMaterial/SupplementaryData1/free_SH3_RD/MTX2data_free_SH3.rds')
 
-colnames(sdata)[6] <- 'estradiol'
+sdata$motif_deletion <- grepl(sdata$preys, pattern = 'd.', fixed = T)
+sdata$preys <- gsub(sdata$preys, pattern = 'd.', replacement = '', fixed = T)
+
+
+ref <- 
+  data.frame(
+    Prey.Systematic_name = c("YBL007C",   "YDL019C",   "YFR024C-A", "YHL007C",   "YHR114W",   "YMR109W",   "YOL100W"),
+    Prey.Standard_name = c('Sla1', 'Osh2', 'Lsb3', 'Ste20', 'Bzz1', 'Myo5', 'Pkh2'))
+
+colnames(sdata)[c(1:4, 21, 23)] <- c('sh3_sequence', 'Prey.Systematic_name', 'DHFR12_tag', 'estradiol', 'med.PPI_score', 'motif_deletion')
+
+sdata <- 
+merge(sdata, 
+      ref, 
+      by = 'Prey.Systematic_name')
+
 
 # Keep data of wt preys, discard delta motifs preys
 udata <- 
-  unique(sdata[!sdata$motif_deletion, c(1:6, 20)])
+  unique(sdata[!(sdata$motif_deletion), c(1:4, 21, 23,24)])
 
 # Create the dataframe with estradiol concentration as columns
 
@@ -33,7 +49,7 @@ difdata <-
 
 # Keep data of delta motif preys
 ddata <- 
-  unique(sdata[sdata$motif_deletion, c(1:6, 20)])
+  unique(sdata[sdata$motif_deletion, c(1:4, 21, 23,24)])
 
 ddata$DHFR12_tag <- factor(ddata$DHFR12_tag , 
                              levels = c('C', 'N'), 
@@ -66,7 +82,7 @@ z$max_dif <-
 library(dplyr)
 
 z %>%
-  dplyr::group_by(Prey.Standard_name) %>%
+  dplyr::group_by(Prey.Systematic_name) %>%
   dplyr::mutate(est_prey = median(max_dif)) -> z
 
 
@@ -110,7 +126,7 @@ write.csv2(difdata, file = '~/ancSH3_paper/SupplementaryMaterial/Data/free_sh3_d
 dif_pxxp <- 
 merge(difdata, 
       ddata, 
-      by = c('Prey.Systematic_name', 
+      by = c('Prey.Systematic_name',
              'Prey.Standard_name',
              'sh3_sequence', 
              'estradiol',
@@ -131,11 +147,12 @@ sdata$DHFR12_tag <- factor(sdata$DHFR12_tag,
                              levels = c('C', 'N'), 
                              labels = c('C-tag', 'N-tag'))
 
+
 cdata <- 
   merge(sdata, 
         difdata, 
-        by = c('Prey.Systematic_name', 
-               'Prey.Standard_name', 
+        by = c('Prey.Standard_name', 
+               'Prey.Systematic_name', 
                'sh3_sequence', 
                'DHFR12_tag'), 
         suffixes = c('.all', '.cor'))
@@ -159,14 +176,14 @@ cdata$estradiol.all <-
 
 # Compare the noise in the experiment with the 
 # emptyLP tagged in C and in N
-compare_means(PPI_score ~ DHFR12_tag, cdata[cdata$sh3_sequence == 'emptyLP', c(3,4,19)])
-#.y.       group1 group2        p   p.adj p.format p.signif method  
-#<chr>     <chr>  <chr>     <dbl>   <dbl> <chr>    <chr>    <chr>   
-#  1 PCA_score C-tag  N-tag  1.06e-11 1.1e-11 1.1e-11  ****     Wilcoxon
+compare_means(med.PPI_score.cor ~ DHFR12_tag, cdata[cdata$sh3_sequence == 'emptyLP', c(2,3,4,27)])
+# A tibble: 1 × 8
+#.y.               group1 group2        p   p.adj p.format p.signif method  
+#<chr>             <chr>  <chr>     <dbl>   <dbl> <chr>    <chr>    <chr>   
+#  1 med.PPI_score.cor C-tag  N-tag  4.76e-30 4.8e-30 <2e-16   ****     Wilcoxon
 
 cdata[cdata$estradiol.all == 0, "estradiol.all"] <- 0.99
 #na.replace(cdata$estradiol.all, replace = 0.99)
-
 
 Fig5SuppB <- 
 ggplot(cdata[!cdata$motif_deletion.all, ])+
@@ -292,7 +309,7 @@ ggplot(comp[comp$sh3_sequence %in% c('optMyo3', 'optMyo5'), ],
   facet_grid(cols = vars(sh3_sequence), rows = vars(DHFR12_tag))+
   stat_cor(method = 'spearman', cor.coef.name = c('r'), size = 4)+
   ylab(expression(atop(paste(Delta,'(WT prey - motif',Delta, ' prey)'), paste('free SH3 med. PPI score'))))+
-  xlab(expression(paste(Delta,'(WT prey - motif',Delta, ' prey) paralogue med. PPI score')))+
+  xlab(expression(paste(Delta,'(WT prey - motif',Delta, ' prey) paralog med. PPI score')))+
   geom_point(aes(), color = 'grey20' , size = 2.5)+
   xlim(-0.1, 0.6)+
   ylim(-0.1, 0.6)+
@@ -328,8 +345,6 @@ ggplot(comp[comp$sh3_sequence %in% c('optMyo3', 'optMyo5'), ],
 # Significant correlation observed 
 # r = 0.89 p=0.012 optMyo3 free vs optMyo3-Myo3p
 # r = 0.64 p=0.14 optMyo5 free vs optMyo5-Myo5p
-#ggsave('~/Maitrise/PCA_DHFR_array/PCA_SH3_libre/Figure_ancSH3_paper/effect_dmotifvspara.png', 
- #      height = 4.5, width = 6)
 
 
 
@@ -338,8 +353,19 @@ compare_means(med.PPI_score ~ sh3_sequence, data = difdata[difdata$sh3_sequence 
                                                       difdata$DHFR12_tag == 'N-tag', ], 
               p.adjust.method = 'BH', method = 'kruskal.test')
 
+ggplot(difdata[difdata$sh3_sequence != 'emptyLP',])+ 
+        geom_boxplot(aes(x = sh3_sequence, y = med.PPI_score))+
+  facet_grid(cols = vars(DHFR12_tag))+
+  geom_jitter(aes(x = sh3_sequence, y = med.PPI_score))+
+  stat_compare_means(aes(x = sh3_sequence, y = med.PPI_score))
+
+compare_means(med.PPI_score ~ sh3_sequence, data = difdata[difdata$sh3_sequence != 'emptyLP' &
+                                                             difdata$DHFR12_tag == 'C-tag', ], 
+              p.adjust.method = 'BH', method = 'kruskal.test')
+
 
 # difference non-significant between SH3s
+
 
 FigSuppD <- 
 ggplot(difdata) +
@@ -378,7 +404,7 @@ ggplot(difdata) +
 
 figdata <- 
 cdata[cdata$sh3_sequence %in% c('AncC', 'optMyo3', 'optMyo5') &
-                cdata$DHFR12_tag== 'C-tag', c(1:6,19, 21)]
+                cdata$DHFR12_tag== 'C-tag', ]
 
 figdata[!figdata$motif_deletion.all, ] %>%
 dplyr::filter(estradiol.all == estradiol.cor)-> figdata
@@ -388,8 +414,9 @@ figdata$sh3_sequence<-
   factor(figdata$sh3_sequence, 
          levels = c( 'AncC', 'optMyo3', 'optMyo5'))
 
+#norm = PPI score
 Fig5C <- 
-ggplot(figdata, aes(Prey.Standard_name, PPI_score))+
+ggplot(figdata, aes(Prey.Standard_name, norm))+
   geom_boxplot(aes(fill = sh3_sequence), width = 0.5, alpha = 0.8)+
   scale_fill_manual(values= c('#551A8B', '#3366CC', 'orangered'))+
   stat_compare_means(aes(group = sh3_sequence), label = 'p.signif', label.y = 0.92)+
@@ -418,7 +445,7 @@ Fig5A <-
 
 fig5 <- 
 plot_grid(Fig5A, Fig5B, Fig5C,labels = 'AUTO', label_fontface = 'plain', 
-          label_size = 16, ncol = 3, rel_widths = c(0.8,1,1))
+          label_size = 16, ncol = 3, rel_widths = c(1,1,1))
 
 ggsave(fig5, file='~/ancSH3_paper/Figure5.png', width = 12.5, height = 4.5)
 

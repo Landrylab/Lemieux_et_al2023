@@ -21,7 +21,7 @@ data <-
   read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS1.csv')[,-1]
 
 
-# SuppFig2H : verification of the optimized sequence effect on PPI scores
+# verification of the optimized sequence effect on PPI scores
 wt <- subset(data[, -c(5:8, 9:15, 18:19)],
              subset = sh3_sequence %in% c('extantMyo3', 'extantMyo5'))
 opt <- subset(data[, -c(5:8, 9:15, 18:19)],
@@ -303,7 +303,6 @@ Fig2A <-
         axis.title.x = element_blank(),
         panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   guides(color = 'none')
-
 
 
 

@@ -92,7 +92,7 @@ ggplot(PCA_dock, aes(x =med.PPI_score , y = cluster_median_Interaction_energy.kc
                      labels = c('predicted motif', 'confirmed motif'))+
   xlim(0,1)+
   xlab('med. PPI score')+
-  ylab(expression(paste('median ' , Delta, 'G (kcal/mol)')))+
+  ylab(expression(paste('med. ' , Delta, 'G (kcal/mol)')))+
   theme_bw()+
     geom_text_repel(
     aes(label = Motif.Standard_name),
@@ -118,58 +118,6 @@ guides(color = guide_legend(title = "",
                             override.aes = aes(label=''), nrow = 2))
 
 
-# Supplementary Figure 4C : Comparison of the differences between paralogs
-
-# PCA_dock_w <- 
-# pivot_wider(PCA_dock[, -c(1, 4,6, 7)], 
-#             names_from = sh3_sequence, 
-#             values_from = c(cluster_median_Interaction_energy.kcal.mol., med.PPI_score))
-# 
-# PCA_dock_w <- 
-# mutate(PCA_dock_w, dPPI_Score = med.PPI_score_extantMyo5 - med.PPI_score_extantMyo3, 
-#        ddock_score = cluster_median_Interaction_energy.kcal.mol._extantMyo5 - cluster_median_Interaction_energy.kcal.mol._extantMyo3)
-# 
-# PCA_dock_w$conf <- 
-# PCA_dock_w$Motif.Standard_name %in% conf$prey
-
-
-
-# dDG vs dPPI score
-
-#FigSupp4C <- 
-# ggplot(PCA_dock_w, aes(x = dPPI_Score, y = ddock_score))+
-#   geom_smooth(method = 'glm', color = 'orangered', fill = 'grey')+
-#   geom_point(aes(color = conf), size = 3)+
-#   scale_color_manual(values = c('grey20', '#e5ca28ff'), 
-#                      labels = c('predicted', 'confirmed'))+
-#   ylab(expression(paste(Delta, Delta, 'G (Myo5 - Myo3)(kcal/mol)')))+
-#   xlab(bquote(''*Delta~'('~PPI[Myo5]~ - ~PPI[Myo3]~') score'))+
-#   theme_bw()+
-# 
-#   geom_text_repel(
-#     aes(label = Motif.Standard_name),
-#     size = 3.5,
-#     box.padding = unit(0.4, "lines"),
-#     point.padding = unit(0.3, "lines"),
-#     min.segment.length = 0,
-#     segment.curvature = -0.1,
-#     segment.ncp = 3,
-#     segment.angle = 20
-#   )+
-#   stat_cor(data = PCA_dock_w[PCA_dock_w$Motif.Standard_name != 'Mid2', ],
-#            method = 'spearman', size = 5, cor.coef.name = c('r'), label.y = 2.5, color = 'grey20')+
-#   theme(strip.text = element_text(size =16),  
-#         axis.text = element_text(size =12),
-#         legend.text = element_text(size = 14), 
-#         axis.title = element_text(size =14), 
-#         legend.position = 'bottom', 
-#         panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-#   guides(color = guide_legend(title = "",
-#                               override.aes = aes(label = ""), nrow = 1),
-#          shape = guide_legend(title = '',
-#                               override.aes = aes(label=''), nrow = 2))
-
- 
 
 # Supplementary Figure 4B : Cluster rank verification
 raw_dG <- 
@@ -196,7 +144,7 @@ apply(tab_clus, 1, sum)
 tab_clus[,2]/28
 # The minimal energy per docking is not necessarily in the first-ranked cluster
 
-# Verfiy if the median of the first-ranked cluster is the lowest 
+# Verify if the median of the first-ranked cluster is the lowest 
 raw_dG %>%
   dplyr::group_by(preys, SH3, cluster) %>%
   dplyr::summarise(med_ener =  median(Interaction_Energy)) -> med_dG
@@ -209,32 +157,52 @@ med_dG%>%
 table(min_med_cluster[, c(2,3)])/28
 # Median energy is a better indicator than the lowest energy  for each docking
 
+library(olsrr)
+library(ggpmisc)
+library(reshape2)
 
-#FigSupp4B <-  
-ggplot(med_dG, aes(x = factor(cluster), y = med_ener))+
- geom_violin(fill = 'white')+
+pre1 <-setdiff(names(med_dG), c("med_ener", "SH3"))
+mod_dres<-NULL
+for (j in pre1) {
+  model  <- lm( med_ener ~ cluster+ get(j), data = med_dG)
+  bmodel <- broom::tidy(model)
+  bmodel$term[3]<-j
+  bmodel<-bmodel[3,]
+  mod_dres<-rbind(mod_dres,bmodel)
+}
+mod_dres
+
+pre1.plot = melt(med_dG, id.vars = c('med_ener', 'cluster')) %>% 
+  dplyr::filter(variable == 'SH3')
+
+
+FigSupp4B <-  
+ggplot(pre1.plot, aes(x = cluster, y = med_ener))+
+  geom_violin(aes(x = cluster, y = med_ener, group = cluster), fill = 'white', color = 'grey20')+
   #facet_grid(~SH3, scales = 'free')+
-  geom_boxplot(width=0.1, fill ='grey80', outlier.colour = 'transparent')+
-  geom_jitter(width = 0.2, alpha = 0.5, aes(color = preys))+
-  scale_color_viridis(discrete = T, option = 'turbo')+
-  stat_smooth(method = "lm", se=TRUE, aes(group=1), span =0.5, 
-              fullrange = T, color = 'orangered')+
-  ggpmisc::stat_fit_glance(method = "lm",
-                           label.y = "bottom",
-                           method.args = list(formula = y ~ x),
-                           mapping = aes(label = sprintf('italic(r)^2~"="~%.3f~~italic(P)~"="~%.2g',
-                                                         after_stat(r.squared), after_stat(p.value))),
-                           parse = TRUE)+
+  #geom_boxplot(width=0.1, fill ='grey80', outlier.colour = 'transparent')+
+  geom_jitter(aes(color = value), width = 0.2, alpha = 0.5, na.rm = T) +#, aes(color = preys))+
+  scale_color_manual(values = c('#551A8B', '#3366CC', 'orangered'))+
+  geom_smooth(aes(cluster, med_ener, colour=variable),
+            formula = y ~ x, method="glm", se=FALSE,
+            colour="grey20", na.rm = T)+
+  scale_x_discrete(limits = c(1,2,3,4,5,6,7,8,9))+
+  stat_poly_eq(formula = y ~ x, 
+                        aes(x = cluster, y = med_ener, label = paste(..eq.label..,
+                                                            ..p.value.label..,
+                                                            sep = "~~~~")), 
+                        parse = TRUE, label.y = 0.98, small.p = T)+
   xlab('Docking clusters')+
-  ylab(expression(paste('median ', Delta, 'G (kcal/mol)')))+
+  ylab(expression(paste('med. ', Delta, 'G (kcal/mol)')))+
   theme_bw()+
-  ylim(-15, 0)+
-  theme(legend.position = 'none',
+  ylim(-15, 1)+
+  theme(legend.position = 'bottom',
         strip.text = element_text(size =16),
         axis.text = element_text(size =12),
         legend.text = element_text(size = 14),
         axis.title = element_text(size =14),
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  guides(color = guide_legend(title =''))
 
 
 # Figure 4C : Compare the distribution of median Energy between the SH3s
@@ -286,7 +254,7 @@ ggplot(med_c1_clust, aes(x = SH3, y = Interaction_Energy))+
   xlim('Myo3', 'AncC', 'Myo5')+
   ylim(-12, 2)+
   #scale_fill_manual(values = c('#551A8B', '#3366CC', 'orangered'))+
-  ylab(expression(paste('median ',  Delta, 'G (kcal/mol)')))+
+  ylab(expression(paste('med. ',  Delta, 'G (kcal/mol)')))+
   #stat_cor(method = 'spearman', fontface = 'plain', size = 4, label.x = -7.5)+
   geom_point(aes(), size = 2, alpha = 0.7, color = 'grey20')+
   geom_line(aes(group = preys), size =0.7, alpha = 0.7, color = 'grey20')+
@@ -320,19 +288,14 @@ airs <-
 ggdraw()+
   draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig4A.png')
 
-top <- 
-plot_grid(airs, FigSupp4C, 
-          nrow = 1, ncol = 2, labels = c('A','C'), 
+
+plot_grid(airs, FigSupp4B, 
+          nrow = 1, ncol = 2, labels = c('A','B'), 
           label_fontface = 'plain', label_size = 16, rel_widths = c(1.2, 2))
 
-
-plot_grid(top,FigSupp4B, 
-          nrow = 2, labels = c('', 'B'), 
-          label_fontface = 'plain', label_size = 16, rel_heights = c(1.2, 1), 
-          align = 'v', axis = 'r')
            
     
-ggsave('~/ancSH3_paper/SupplementaryMaterial/SupplementaryFigure4.png', 
-       width = 12, height = 8)
+ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS4.png', 
+       width = 12, height = 5)
 
 

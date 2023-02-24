@@ -16,11 +16,11 @@ library(mixtools)
 #  For prey array plates, final diploid selection plates and final MTX plates #
 # Read array plan in 1536 format
 plate1536 <-
- read.csv2('~/ancSH3_paper/SupplementaryMaterial/Data/plate1536_freeSH3.csv')
+ read.csv2('~/ancSH3_paper/SupplementaryMaterial/SupplementaryData1/free_SH3_RD/plate1536_freeSH3.csv')
 
 
 # Set working directory with raw data from pyphe
-setwd("~/ancSH3_paper/SupplementaryMaterial/Data/free_SH3_RD/MTX2/")
+setwd("~/ancSH3_paper/SupplementaryMaterial/SupplementaryData1/free_SH3_RD/S2_diploid/")
 file = dir(pattern = ".csv")
 
 # Assign names to each data frame object
@@ -54,7 +54,7 @@ all_plate <-
 
 # write file with data of each selection step
 # MTX2_data.csv , diploid2_data.csv or DHFR3_data.csv
-filename = '~/ancSH3_paper/SupplementaryMaterial/Data/free_SH3_data/MTX2_data.csv'# MTX or diploid selection
+filename = '~/ancSH3_paper/SupplementaryMaterial/SupplementaryData1/free_SH3_RD/diploid2_data.csv'# MTX or diploid selection
   write.csv2(all_plate,
              file = filename,
              row.names = T,
@@ -70,7 +70,7 @@ filename = '~/ancSH3_paper/SupplementaryMaterial/Data/free_SH3_data/MTX2_data.cs
 #  all the prey tested here the DHFR3 array was not analysed
 
 # Set working directory where all the previous files were generated
-setwd('~/ancSH3_paper/SupplementaryMaterial/Data/free_SH3_data/')
+setwd('~/ancSH3_paper/SupplementaryMaterial/SupplementaryData1/free_SH3_RD/')
 
 # Read assembled data 
 MTX2_data <- 
@@ -117,7 +117,7 @@ ggplot(data = MTX2_data)+
 
 ### Export clean MTX2 data
 write.csv(x = MTX2_data, 
-          file = '~/ancSH3_paper/SupplementaryMaterial/Data/free_SH3_data/MTX2_data_clean.csv', 
+          file = '~/ancSH3_paper/SupplementaryMaterial/SupplementaryData1/free_SH3_RD/MTX2_data_clean.csv', 
           quote = TRUE, 
           fileEncoding = 'UTF-8')
 
