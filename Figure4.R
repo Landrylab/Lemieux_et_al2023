@@ -176,7 +176,7 @@ pre1.plot = melt(med_dG, id.vars = c('med_ener', 'cluster')) %>%
   dplyr::filter(variable == 'SH3')
 
 
-FigSupp4B <-  
+#FigSupp4B <-  
 ggplot(pre1.plot, aes(x = cluster, y = med_ener))+
   geom_violin(aes(x = cluster, y = med_ener, group = cluster), fill = 'white', color = 'grey20')+
   #facet_grid(~SH3, scales = 'free')+
@@ -188,8 +188,8 @@ ggplot(pre1.plot, aes(x = cluster, y = med_ener))+
             colour="grey20", na.rm = T)+
   scale_x_discrete(limits = c(1,2,3,4,5,6,7,8,9))+
   stat_poly_eq(formula = y ~ x, 
-                        aes(x = cluster, y = med_ener, label = paste(..eq.label..,
-                                                            ..p.value.label..,
+                        aes(x = cluster, y = med_ener, label = paste(after_stat(eq.label),
+                                                                     after_stat(p.value.label),
                                                             sep = "~~~~")), 
                         parse = TRUE, label.y = 0.98, small.p = T)+
   xlab('Docking clusters')+
@@ -246,6 +246,10 @@ pval <-
 pval$my.pval <- 
   paste0('p = ', pval$p.adj)
 
+confi <- c('YHL007C', 'YMR109W', 'YBL007C', 'YDL019C', 'YFR024C-A', 'YOL100W', 'YHR114W')
+med_c1_clust$conf <- 
+matrix(unlist(strsplit(x = as.character(med_c1_clust$preys), split = '_', fixed = T)), ncol = 2, byrow = T)[,1 ] %in% confi
+
 # Figure 4
 Fig4C <- 
 ggplot(med_c1_clust, aes(x = SH3, y = Interaction_Energy))+
@@ -256,10 +260,11 @@ ggplot(med_c1_clust, aes(x = SH3, y = Interaction_Energy))+
   #scale_fill_manual(values = c('#551A8B', '#3366CC', 'orangered'))+
   ylab(expression(paste('med. ',  Delta, 'G (kcal/mol)')))+
   #stat_cor(method = 'spearman', fontface = 'plain', size = 4, label.x = -7.5)+
-  geom_point(aes(), size = 2, alpha = 0.7, color = 'grey20')+
-  geom_line(aes(group = preys), size =0.7, alpha = 0.7, color = 'grey20')+
-  geom_line(data = subset(med_c1_clust, preys == 'YHL007C_both'), aes(group = preys) ,color = 'orangered', size = 1)+
-  geom_point(data = subset(med_c1_clust, preys == 'YHL007C_both') ,color = 'orangered', size = 2)+
+  geom_point(aes(color = conf), size = 2, alpha = 0.7)+
+  geom_line(aes(group = preys, color = conf), size =0.7, alpha = 0.7)+
+  scale_color_manual(values = c('grey20', '#e5ca28ff'))+
+  #geom_line(data = subset(med_c1_clust, preys == 'YHL007C_both'), aes(group = preys) ,color = 'orangered', size = 1)+
+  #geom_point(data = subset(med_c1_clust, preys == 'YHL007C_both') ,color = 'orangered', size = 2)+
   stat_pvalue_manual(pval, label = "my.pval", y.position= c(-0.2, 0.5, 1.4), size = 4.5)+
   theme_bw()+
   theme(legend.position = 'none',
@@ -274,7 +279,7 @@ ggplot(med_c1_clust, aes(x = SH3, y = Interaction_Energy))+
 library(cowplot)
 
 struc <- ggdraw()+
-  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig4A.png')
+  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig4A2.tif')
 
 plot_grid(struc, Fig4B, Fig4C, nrow = 1,
           labels = 'AUTO', label_fontface = 'plain', label_size = 16, 
@@ -286,7 +291,7 @@ ggsave('~/ancSH3_paper/Figure4.png', width = 14, height = 4)
 
 airs <- 
 ggdraw()+
-  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig4A.png')
+  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/FigSupp4A.tif')
 
 
 plot_grid(airs, FigSupp4B, 

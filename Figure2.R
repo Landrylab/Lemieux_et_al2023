@@ -60,6 +60,16 @@ compare_means(med.PPI_score ~ sh3_sequence, data = unique(datat[datat$Bait.Stand
 
 # optimize sequence induces a change in PPI score, we have to use optSH3 as control for the ancestral state
 
+ggpaired(t, x = 'sh3_sequence', y = 'med.PPI_score')+
+  #facet_wrap(~Bait.Standard_name, scales = 'free_x')+
+  stat_compare_means(comparisons = list(c('extantMyo3', 'optMyo3'), c('extantMyo5', 'optMyo5')), paired = T, method = 't.test')+
+  scale_x_discrete(limits = c('extantMyo3', 'optMyo3', 'extantMyo5', 'optMyo5'))+
+  labs(x = 'SH3 sequence', y = 'med. PPI score')
+ggsave('./ancSH3_paper_trash/opt_effect.png')
+
+summaryBy(med.PPI_score~sh3_sequence, t, FUN = median)
+
+
 #Figure 2D & E:  show differences between DupSH3, optSH3s and swapSH3s
 swapm3 <- subset(data,
                subset = sh3_sequence %in% c('optMyo3', 'swapMyo5'))

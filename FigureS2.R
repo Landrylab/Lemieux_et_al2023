@@ -210,7 +210,7 @@ subdata <-
 unique(
   subset(solid_MTX, 
        subset = sh3_sequence %in% c('SH3-depleted', 'extantMyo3', 'extantMyo5'), 
-       select = c('Prey.Systematic_name', 'Bait.Standard_name', 'sh3_sequence', 'PPI_score', 'SH3_dep')))
+       select = c('Prey.Systematic_name', 'Bait.Standard_name', 'sh3_sequence', 'med.PPI_score', 'SH3_dep')))
 
 subdata$sh3_sequence <- 
 factor(subdata$sh3_sequence, 
@@ -230,18 +230,18 @@ subdata$recovered <- factor(subdata$recovered,
 
 # Test to validate there is no expression biais betweem the paralog after normalization
 pval <- 
-  compare_means(PPI_score ~ Bait.Standard_name, subdata, method = 'wilcox.test', p.adjust.method = 'BH')
+  compare_means(med.PPI_score ~ Bait.Standard_name, subdata, method = 'wilcox.test', p.adjust.method = 'BH')
 
 # SuppFig2D
 p3.1 <- 
 ggplot(subdata[subdata$recovered == 'Abundance control' & subdata$sh3_sequence == 'extantSH3', ])+
   geom_boxplot(aes(x = as.factor(Bait.Standard_name), 
-                  y =PPI_score), width = 0.3, alpha = 0.3, color = 'grey30', fill = 'grey65', outlier.color = 'transparent')+
+                  y =med.PPI_score), width = 0.3, alpha = 0.3, color = 'grey30', fill = 'grey65', outlier.color = 'transparent')+
   geom_jitter(aes(x = as.factor(Bait.Standard_name), 
-                 y =PPI_score, color = recovered), 
+                 y =med.PPI_score, color = recovered), 
               width= 0.1)+
   stat_compare_means(aes(x = as.factor(Bait.Standard_name), 
-                         y =PPI_score) ,size = 4.5, label.x = 1.2, label.y = 0.98)+
+                         y =med.PPI_score) ,size = 4.5, label.x = 1.2, label.y = 0.98)+
   facet_grid(cols = vars(recovered), scales = 'free', drop = T)+
   theme_bw() +
   #xlim(0,1)+  
@@ -325,6 +325,6 @@ plot_grid(top,
           nrow = 3, labels = '', rel_heights = c(1,1.1,1.2), 
           align = 'v', axis = 'rl')
 
-ggsave('~/ancSH3_paper/SupplementaryMaterial/SupplementaryFigure2.png', 
+ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS2.png', 
        height = 13, width = 14)
 

@@ -93,15 +93,27 @@ data <-
   data[!c(data$sh3_sequence == 'optMyo3' & data$Bait.Standard_name =='Myo5'), ]
 
 # Set y axis label order
+
+name <- 
+unique(PCA_complete[order(PCA_complete[ , "med.PPI_score"], decreasing=T),
+                    c(1:4, 16:19)])
+name <- 
+  name[name$sh3_sequence =='SH3-depleted',]
+
 sh3dep <- 
-  unique(PCA_complete[PCA_complete$SH3_dep, 2])
+  unique(name[name$SH3_dep, 2])
 sh3indep <- 
-  unique(data[!data$SH3_dep, 2])
+  unique(name[!name$SH3_dep, 2])
 sh3indep <- 
   sh3indep[!(sh3indep %in% sh3dep)]
 sh3indep <- 
   sh3indep[!(sh3indep %in% abondance_c)]
-ynam <- unique(c(abondance_c, sh3indep, sh3dep))
+
+abond<- 
+  unique(name[name$Prey.Standard_name %in% abondance_c, 2])
+
+
+ynam <- unique(c(abond, sh3indep, sh3dep))
 
 
 hm <- 
@@ -138,8 +150,8 @@ ggplot(data) +
   annotate("segment",
            x = 0.5,
            xend = 7.5,
-           y = 15.5,
-           yend = 15.5,
+           y = 14.5,
+           yend = 14.5,
            colour = "#343434",
            size = 0.8,
            linetype = 2)+
@@ -175,7 +187,7 @@ ggdraw()+
   draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig3A.png', scale = 1)
 
 b <- ggdraw()+
-  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig3B.svg', scale = 1)
+  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig3B.png', scale = 1)
 
 left <- 
 plot_grid(a, hm, labels = c('A', 'C'), label_fontface = 'plain', label_size = 16,
@@ -186,7 +198,7 @@ plot_grid(left,
           label_fontface = 'plain', label_size = 16)
 
 
-ggsave(p3, file = '~/ancSH3_paper/Figure3.svg', 
+ggsave(p3, file = '~/ancSH3_paper/Figure31.svg', 
       height = 13, width = 13)
 
 # Manual annotation are added for the missing data (grey tiles) and to highlight the
