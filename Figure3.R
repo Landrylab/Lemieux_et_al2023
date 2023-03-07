@@ -34,7 +34,7 @@ abondance_c <-
     "Hsp82"
   )
 
-# Read Supplementary Data 1 : complete paralog PCA
+# Read Table S1
 PCA_complete <- 
   read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS1.csv')[, -1]
 
@@ -198,7 +198,7 @@ plot_grid(left,
           label_fontface = 'plain', label_size = 16)
 
 
-ggsave(p3, file = '~/ancSH3_paper/Figure31.svg', 
+ggsave(p3, file = '~/ancSH3_paper/Figure3.svg', 
       height = 13, width = 13)
 
 # Manual annotation are added for the missing data (grey tiles) and to highlight the

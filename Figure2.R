@@ -16,7 +16,7 @@ library(viridis)
 library(magick)
 library(cowplot)
 
-# Import data from SupplementaryData1 
+# Import data from TableS1 
 data <-
   read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS1.csv')[,-1]
 
@@ -60,14 +60,6 @@ compare_means(med.PPI_score ~ sh3_sequence, data = unique(datat[datat$Bait.Stand
 
 # optimize sequence induces a change in PPI score, we have to use optSH3 as control for the ancestral state
 
-ggpaired(t, x = 'sh3_sequence', y = 'med.PPI_score')+
-  #facet_wrap(~Bait.Standard_name, scales = 'free_x')+
-  stat_compare_means(comparisons = list(c('extantMyo3', 'optMyo3'), c('extantMyo5', 'optMyo5')), paired = T, method = 't.test')+
-  scale_x_discrete(limits = c('extantMyo3', 'optMyo3', 'extantMyo5', 'optMyo5'))+
-  labs(x = 'SH3 sequence', y = 'med. PPI score')
-ggsave('./ancSH3_paper_trash/opt_effect.png')
-
-summaryBy(med.PPI_score~sh3_sequence, t, FUN = median)
 
 
 #Figure 2D & E:  show differences between DupSH3, optSH3s and swapSH3s
@@ -263,7 +255,7 @@ ggplot(data_para, aes(med.PPI_score_extantMyo5, med.PPI_score_extantMyo3,
        shape = 'none')
 
 
-# Figure 2A : protein abundance measured by cytometry
+# Figure 2A : protein abundance measured by cytometry, Table S6
 GFP_data <- 
   read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS6.csv', header = T)[, -1]
 
@@ -318,10 +310,10 @@ Fig2A <-
 
 # Figure Supplementary 2G : All cytometry data
 median(GFP_data[ GFP_data$GFP_tagged_protein =='Myo5', "med_rep"])
-#3.457
+#3.46
 
 median(GFP_data[ GFP_data$GFP_tagged_protein =='Myo3', "med_rep"])
-#2.497
+#2.5
 
 x <-
   compare_means(med_rep~sh3_sequence, group.by = 'GFP_tagged_protein', data = GFP_data, method = 't.test', ref.group = 'extantSH3', 
@@ -336,7 +328,7 @@ ggplot(GFP_data,
        aes(x = sh3_sequence, y = med_rep, color = GFP_tagged_protein))+
   geom_jitter(alpha=0.8, width = 0.2, size = 3)+
   scale_color_manual(values = c('grey30', '#3366CC', 'orangered'))+
-  geom_hline(yintercept = c((2.497), (3.457)), linetype = 'dashed')+
+  geom_hline(yintercept = c((2.5), (3.46)), linetype = 'dashed')+
   xlab('SH3 domain')+
   ylab(expression(paste('med. fluorescent intensity(', log[2], ' scale)')))+
   scale_y_continuous(trans = 'log2', breaks = c(1.5, 2,2.5,3, 3.5, 4))+
@@ -387,7 +379,7 @@ plot_grid(top2, Figure2ED,
           label_fontface = 'plain', label_size = 16, 
           rel_heights = c(1, 0.6))
 # Save Figure 2
-ggsave('~/ancSH3_paper/Figure2.png', 
+ggsave('~/ancSH3_paper/Figure2.svg', 
        height = 8, width = 12)
 
 

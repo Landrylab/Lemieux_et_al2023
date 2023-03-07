@@ -218,7 +218,7 @@ ggplot(cdata[!cdata$motif_deletion.all, ])+
 
 # Supplementary Figure 5B : Comparison of PCA score from complete paralog vs free sh3 
 
-# Import and adapt PCA motif validation
+# Import Table S2
 dcomp_para <- read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS2.csv')[, -1]
 
 dcomp_para <- 
@@ -366,7 +366,6 @@ compare_means(med.PPI_score ~ sh3_sequence, data = difdata[difdata$sh3_sequence 
 
 # difference non-significant between SH3s
 
-
 FigSuppD <- 
 ggplot(difdata) +
   facet_grid(
@@ -447,7 +446,8 @@ fig5 <-
 plot_grid(Fig5A, Fig5B, Fig5C,labels = 'AUTO', label_fontface = 'plain', 
           label_size = 16, ncol = 3, rel_widths = c(1,1,1))
 
-ggsave(fig5, file='~/ancSH3_paper/Figure5.png', width = 12.5, height = 4.5)
+library(svglite)
+ggsave(fig5, file='~/ancSH3_paper/Figure5.svg', width = 12.5, height = 4.5)
 
 # Supplementary Figure 5 assembly
 
@@ -493,7 +493,7 @@ plot_grid(tleft, Fig5SuppB+theme(legend.text = element_text(size = 14),
           label_fontface = 'plain', label_size = 16)
 
 
-ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS5.png', width = 18, height = 14)
+ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS5.svg', width = 18, height = 14)
 
 
 

@@ -18,14 +18,14 @@ firstup <- function(x) {
   substring(x, 2) <- tolower(substring(x, 2))
   x
 }
-# colony area distribution
+# colony area distribution, from PCA_analysis_complete_paralog.R
 p1 <- readRDS(file = '~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig2A.rds')
 
-# look for expression biais in raw data
+# look for expression biais in raw data, from PCA_analysis_complete_paralog.R
 p2 <- readRDS(file = '~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig2b.rds')+
         theme(legend.position = 'none')
 
-# technical replicates comparison
+# technical replicates comparison, from PCA_analysis_complete_paralog.R
 p3 <- readRDS(file = '~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig2C.rds')+
       xlab('PPI score replicate 1')+
       ylab('PPI score replicate 2')
@@ -324,7 +324,7 @@ plot_grid(top,
           bottom, 
           nrow = 3, labels = '', rel_heights = c(1,1.1,1.2), 
           align = 'v', axis = 'rl')
-
-ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS2.png', 
+library(svglite)
+ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS2.svg', 
        height = 13, width = 14)
 

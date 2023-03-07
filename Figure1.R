@@ -21,7 +21,7 @@ firstup <- function(x) {
   x
 }
 
-# Import sheet1 (full-lenght PCA) SupplementaryData1
+# Import Table S1
 data <-
   read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS1.csv')[,-1]
 
@@ -139,7 +139,7 @@ p1 <-
        shape = 'none')
 
 #Figure 1D : proline motif prediction
-
+#Import Table S5
 pred_motif <- 
   read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS5.csv')[, -1]
 
@@ -206,7 +206,7 @@ viridis(n=n, option = LETTERS[7])
 
 
 # Figure 1E: proline motif confirmation PCA
-
+# Import Table S2
 data_motif <- 
   read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS2.csv')[, -1]
 
@@ -261,7 +261,7 @@ ggplot(data_fig, aes(x=Prey.Standard_name, y = PPI_score,
 
 ## Panel assembly for Figure 1
 library(cowplot)
-
+library(svglite)
 # Network created with cytoscape and modified by inkscape
 network <- c('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig1A.png')
 a <- 
@@ -510,6 +510,6 @@ plot_grid(side,
           labels = c('', 'C'), rel_widths = c(1, 0.9))
 
 
-ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS3.png', 
+ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS3.svg', 
        width = 13, height = 7.5)
 
