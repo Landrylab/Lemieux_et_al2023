@@ -1,132 +1,18 @@
-######################################
-## Supp Figure 2                    ##
-## author : Pascale Lemieux         ##
-## Date : 2023-01-12                ##
-######################################
+# PPI Databases complementary analysis
+# Figure S2 
+# author : Pascale Lemieux
+# 5-07-2023
 library(ggplot2)
+library(ggupset)
+library(gtools)
 library(tidyverse)
-library(stringr)
-library(ggpubr)
-library(plyr)
-library(ggcorrplot)
-library(ggrepel)
-library(magrittr)
-library(viridis)
-library(cowplot)
 
 firstup <- function(x) {
   substring(x, 2) <- tolower(substring(x, 2))
   x
 }
-# colony area distribution, from PCA_analysis_complete_paralog.R
-p1 <- readRDS(file = '~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig2A.rds')
-
-# look for expression biais in raw data, from PCA_analysis_complete_paralog.R
-p2 <- readRDS(file = '~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig2b.rds')+
-        theme(legend.position = 'none')
-
-# technical replicates comparison, from PCA_analysis_complete_paralog.R
-p3 <- readRDS(file = '~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig2C.rds')+
-      xlab('PPI score replicate 1')+
-      ylab('PPI score replicate 2')
-
-# Cytometry expression data
-
-SuppFigG <- readRDS(file = '~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig2G.rds')
 
 
-# Read Table S4 with liquid validation data
-gc_out <- 
-  read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS4.csv')[, -1]
-
-# compute median PPI score for liquid PCA
-
-gc_out %<>%
-  dplyr::group_by(Prey.Systematic_name, sh3_sequence, Bait.Standard_name)%>%
-  dplyr::mutate(n(), med.PPI_score_gc = median(PPI_score_gc))
-
-
-# Read TableS1 : complete paralog PCA result to compare 
-# with liquid PCA result
-solid_MTX <- 
-  read.csv(file = '~/ancSH3_paper/SupplementaryMaterial/TableS1.csv')[, -1]
-
-solid_MTX$sh3_sequence <- 
-  as.character(solid_MTX$sh3_sequence)
-
-solid_MTX[(grepl(solid_MTX$sh3_sequence, pattern = 'swap-optMyo3')), "sh3_sequence"] <- 'optMyo3'
-solid_MTX[(grepl(solid_MTX$sh3_sequence, pattern = 'swap-optMyo5')), "sh3_sequence"] <- 'optMyo5'
-
-comp_MTX <- 
-  merge(gc_out, 
-        unique(solid_MTX[, c(1:4,16)]), 
-        by = c('Prey.Systematic_name', 'sh3_sequence', 'Bait.Standard_name'),
-        all= F, 
-        sort = F)
-# Correlation solid vs liquid PCA results
-# Remove non inoculated well data
-comp_MTX <- comp_MTX[!(comp_MTX$med.PPI_score>0.75 & comp_MTX$med.PPI_score_gc < 10),]
-
-# keep only interesting columns
-comp_MTX <- 
-  unique(comp_MTX[, c(1:3, 15:17)])
-
-comp_MTX <- na.omit(comp_MTX)
-
-# Labelled each Bait strain as an experiment condition
-# swap.optSH3
-
-comp_MTX$exp <- ''
-
-#comp_MTX[(grepl(comp_MTX$sh3_sequence, pattern = 'swap-opt')), "exp"] <- 'swap.optSH3'
-
-comp_MTX[(comp_MTX$sh3_sequence =='optMyo3' & comp_MTX$Bait.Standard_name == 'Myo5'), "exp"] <- 'swap.optSH3'
-comp_MTX[(comp_MTX$sh3_sequence =='optMyo5' & comp_MTX$Bait.Standard_name == 'Myo3'), "exp"] <- 'swap.optSH3'
-
-# Ancc
-comp_MTX[(comp_MTX$sh3_sequence =='AncC'), "exp"] <- 'AncC'
-
-#opt.SH3
-comp_MTX[(comp_MTX$sh3_sequence =='optMyo5' & comp_MTX$Bait.Standard_name == 'Myo5'), "exp"] <- 'optSH3'
-comp_MTX[(comp_MTX$sh3_sequence =='optMyo3' & comp_MTX$Bait.Standard_name == 'Myo3'), "exp"] <- 'optSH3'
-
-comp_MTX[(comp_MTX$sh3_sequence =='SH3-depleted'), "exp"] <- 'SH3-depleted'
-
-
-# SuppFig2G
-p7 <- 
-ggplot(unique(comp_MTX))+
-  geom_point(aes(med.PPI_score_gc, med.PPI_score, color= exp, shape= Bait.Standard_name), size = 2.5, alpha = 0.8)+
-  stat_cor(aes(med.PPI_score_gc, med.PPI_score, color = exp), method = 'spearman', size = 4.5, cor.coef.name = c('r'), 
-           label.y = c(0.05, 0.15, 0.25, 0.35), label.x = c(28))+
-  stat_cor(aes(med.PPI_score_gc, med.PPI_score), method = 'spearman', size = 4.5, cor.coef.name = c('r'))+
-  scale_color_manual(values = c('#551A8B', '#3366CC','grey20', 'orangered'))+
-  theme_bw()+
-  ylim(0,1)+
-  ylab('med. PPI score')+
-  xlab('med. liquid PPI score')+
-  theme(legend.position = 'bottom', legend.title = element_blank(), 
-        legend.text = element_text(size = 14),
-        #legend.title = element_text(size = 16),
-        axis.title = element_text(size =14), 
-        axis.text = element_text(size =12),
-        strip.text.x = element_text(size = 16), 
-        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  guides(shape = guide_legend(nrow = 2), 
-         color = guide_legend(nrow = 2, title = "",
-                              override.aes = aes(label = "")))
-
-
-# FigSupp2H : codon optimization effect
-
-#p6_l <- 
-#  readRDS('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig2H_l.rds')
-#p6_r <- 
-#  readRDS('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig2H_r.rds')
-  
-# SuppFig2D : Result comparison with BioGrid reference dataset
-
-library(ggupset)
 # Read file with the comparison information
 exp_collapsed <- 
   readRDS('~/ancSH3_paper/SupplementaryMaterial/Data/BioGridcomp.rds')
@@ -152,7 +38,7 @@ abondance_c <-
     "YPL240C"
   )
 
-# Identify the comparison qith the abundance control information
+# Identify the comparison with the abundance control information
 exp_collapsed[exp_collapsed$orf %in% abondance_c, "recovered"] <-'Abundance control' 
 exp_collapsed$DHFR12.strain <- 
   firstup(exp_collapsed$DHFR12.strain)
@@ -186,7 +72,7 @@ p4 <-
   scale_x_upset(n_intersections = 20)+
   ylab('Reported in BioGRID')+
   xlab(NULL)+
-  scale_fill_manual(values = c('grey20','darkcyan', 'grey65'))+
+  scale_fill_manual(values = c('grey20','darkcyan', 'grey65'), labels = c('Abundance control', 'Detected', 'Undetected in this study'))+
   theme(plot.title = element_text(hjust = 0.5),
         legend.title = element_blank(), legend.position = 'bottom', 
         legend.text = element_text(size = 14),
@@ -196,135 +82,372 @@ p4 <-
         panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
   guides(fill = guide_legend(nrow = 2))+
   theme_combmatrix(combmatrix.panel.line.size = 1, 
-                  combmatrix.panel.point.size = 2, 
-                  combmatrix.label.text = element_text(size = 12), 
-                  combmatrix.panel.point.color.fill = 'grey20', 
-                  combmatrix.panel.line.color = 'grey20')
+                   combmatrix.panel.point.size = 2, 
+                   combmatrix.label.text = element_text(size = 12), 
+                   combmatrix.panel.point.color.fill = 'grey20', 
+                   combmatrix.panel.line.color = 'grey20')
 
 
-  
-# SuppFig2D & E :Test for expression biais after normalization & SH3-depletion impact on PPI scores
-##here
+# comparison Biogrid Myo3 vs Myo5
+compM35 <- table(exp_collapsed[, 1:2])
+compM35 <- as.matrix(compM35)
 
-subdata <- 
-unique(
-  subset(solid_MTX, 
-       subset = sh3_sequence %in% c('SH3-depleted', 'extantMyo3', 'extantMyo5'), 
-       select = c('Prey.Systematic_name', 'Bait.Standard_name', 'sh3_sequence', 'med.PPI_score', 'SH3_dep')))
+spe_M35 <-  compM35[(compM35[, 1] == 0 | compM35[, 2] == 0), ]
 
-subdata$sh3_sequence <- 
-factor(subdata$sh3_sequence, 
-       levels = c('extantMyo3', 'extantMyo5', 'SH3-depleted'), 
-       labels = c('extantSH3', 'extantSH3','SH3-depleted'))
+spe_M35 <- as.data.frame(spe_M35)    
+table(spe_M35[, 2:3])
 
-subdata <- 
-merge(subdata, 
-      exp_collapsed[, c(1:3)], 
-      by.x = c('Prey.Systematic_name', 'Bait.Standard_name'), 
-      by.y = c('orf', 'DHFR12.strain'))
+# 6 specific to Myo3, and 22 specific to Myo5
+detect_spe <- 
+merge(spe_M35, 
+      exp_collapsed, 
+      by = c('orf', 'DHFR12.strain'))
 
-subdata$recovered <- factor(subdata$recovered, 
-                            levels = c('Abundance control', 'Detected'),
-                            labels = c('Abundance control', 'Specific PPIs'))
+# all paralog specific interaction undetected in the PCA experiment
 
 
-# Test to validate there is no expression biais betweem the paralog after normalization
-pval <- 
-  compare_means(med.PPI_score ~ Bait.Standard_name, subdata, method = 'wilcox.test', p.adjust.method = 'BH')
+## validation with string database
+## only score above 700 have high confidence
+string <- read.delim('~/ancSH3_paper/Reviews/SupplementaryMaterial/Data/4932.protein.links.v11.5_string.txt', sep = ' ')
 
-# SuppFig2D
-p3.1 <- 
-ggplot(subdata[subdata$recovered == 'Abundance control' & subdata$sh3_sequence == 'extantSH3', ])+
-  geom_boxplot(aes(x = as.factor(Bait.Standard_name), 
-                  y =med.PPI_score), width = 0.3, alpha = 0.3, color = 'grey30', fill = 'grey65', outlier.color = 'transparent')+
-  geom_jitter(aes(x = as.factor(Bait.Standard_name), 
-                 y =med.PPI_score, color = recovered), 
-              width= 0.1)+
-  stat_compare_means(aes(x = as.factor(Bait.Standard_name), 
-                         y =med.PPI_score) ,size = 4.5, label.x = 1.2, label.y = 0.98)+
-  facet_grid(cols = vars(recovered), scales = 'free', drop = T)+
-  theme_bw() +
-  #xlim(0,1)+  
-  ylim(0,1)+
-  ylab('med. PPI score')+
-  xlab('WT bait')+
-   scale_color_manual(values = c('grey30'), 
-                     labels = c(''))+
-  theme( legend.position = 'none',
-         legend.text = element_text(size = 14),
-         axis.title = element_text(size = 14), 
-         axis.text = element_text(size =12), 
-         legend.title = element_text(size =16),
-         strip.text.x = element_text(size = 16), 
-         panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  guides(color = guide_legend(title = "",
-                              override.aes = aes(label = ""), nrow = 1), 
-         fill =guide_legend(title = '', nrow = 1))  
+string <- lapply(string, gsub, pattern = '4932.', replacement = '', fixed = T)
 
+string <- 
+  as.data.frame(string)
+# select only Myo3 and Myo5 PPI
+sub_string <- 
+unique(subset(string, 
+       subset = (protein1 %in% c('YKL129C', 'YMR109W') | protein2 %in% c('YKL129C', 'YMR109W'))))
 
-#p3.2 <- 
-  # ggplot(subdata[subdata$recovered == 'Specific PPIs', ])+
-  # geom_boxplot(aes(x = as.factor(sh3_sequence), 
-  #                  y =PPI_score), width = 0.3, alpha = 0.3, color = 'grey30', fill = 'grey65', outlier.color = 'transparent')+
-  # geom_jitter(aes(x = as.factor(sh3_sequence), 
-  #                 y =PPI_score, color = SH3_dep), 
-  #             width= 0.1)+
-  # stat_compare_means(aes(x = as.factor(sh3_sequence), 
-  #                        y =PPI_score) ,size = 4.5, label.x = 1, label.y = 0.98)+
-  # facet_grid(cols = vars(recovered), scales = 'free', drop = T)+
-  # theme_bw() +
-  # #xlim(0,1)+  
-  # ylim(0,1)+
-  # ylab('PPI score')+
-  # xlab('paralog variant')+
-  # scale_color_manual(values = c('grey65', 'darkcyan'), 
-  #                    labels = c('SH3-independent', 'SH3-dependent'))+
-  # scale_fill_manual(values = c('grey65', 'darkcyan'), 
-  #                   labels = c('SH3-independent', 'SH3-dependent'))+
-  # theme( legend.position = 'bottom',
-  #        legend.text = element_text(size = 14),
-  #        axis.title = element_text(size = 14), 
-  #        axis.text = element_text(size =12), 
-  #        legend.title = element_text(size =16),
-  #        strip.text.x = element_text(size = 16), 
-  #        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
-  # guides(color = guide_legend(title = "",
-  #                             override.aes = aes(label = ""), nrow = 2), 
-  #        fill =guide_legend(title = '', nrow = 1))  
+sub_string$combined_score <- 
+  as.numeric(sub_string$combined_score)
 
-## Supplementary Figure 2 assembly
+ggplot(sub_string)+
+  geom_density(aes(x = combined_score))
 
-top <- 
-plot_grid(p1, p2, 
-          #p3+theme(axis.title.y = element_text()),
-          p3.1+theme(legend.position = 'none')+guides(color = guide_legend(nrow =2, title = ''), 
-                            fill = 'none'), 
-          ncol =3, align = 'h', axis = 'b', 
-          labels = c('A', 'B', 'C'), label_fontface = 'plain', 
-          rel_widths = c(1.2,1,1))
+# reorganisation of the bait vs prey
+sub_string$DHFR12.strain <- NA
+sub_string[sub_string$protein1 %in% c('YKL129C', 'YMR109W'), 4] <- sub_string[sub_string$protein1 %in% c('YKL129C', 'YMR109W'), 1]
+sub_string[sub_string$protein2 %in% c('YKL129C', 'YMR109W'), 4] <- sub_string[sub_string$protein2 %in% c('YKL129C', 'YMR109W'), 2]
 
-middle <- 
-  plot_grid(p3,
-            p4+theme(axis.title.y = element_text(hjust = 2.2)), 
-            #SuppFigG+theme(legend.text = element_text(size = 14), 
-            #               axis.title.y = element_text(hjust = 4)),
-            ncol =2, rel_widths = c(0.5,0.9),
-            labels = c('D', 'E'), label_fontface = 'plain')
+sub_string$DHFR12.strain <- 
+  gsub(sub_string$DHFR12.strain, pattern = 'YMR109W', replacement = 'Myo5')
+sub_string$DHFR12.strain <- 
+  gsub(sub_string$DHFR12.strain, pattern = 'YKL129C', replacement = 'Myo3')
 
-bottom <- 
-  plot_grid(SuppFigG+theme(legend.text = element_text(size = 14), 
-                          axis.title.y = element_text(hjust = 4)),
-            p7, rel_widths = c(1, 1),
-            nrow = 1, ncol = 2,  margin = 't', align = 'h', axis = 'b', 
-            labels = c('F','G'), label_fontface = 'plain')
+sub_string$orf <- NA
+sub_string[!(sub_string$protein1 %in% c('YKL129C', 'YMR109W')), 5] <- sub_string[!(sub_string$protein1 %in% c('YKL129C', 'YMR109W')), 1]
+sub_string[!(sub_string$protein2 %in% c('YKL129C', 'YMR109W')), 5] <- sub_string[!(sub_string$protein2 %in% c('YKL129C', 'YMR109W')), 2]
 
 
-plot_grid(top, 
-          middle,
-          bottom, 
-          nrow = 3, labels = '', rel_heights = c(1,1.1,1.2), 
-          align = 'v', axis = 'rl')
-library(svglite)
-ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS2.svg', 
-       height = 13, width = 14)
+sub_string$present_string <- T
+
+sub_string <-  sub_string[, c(3:6)] %>%
+                dplyr::group_by(DHFR12.strain, orf)%>% unique() 
+
+# specific PPI for paralogs
+string_spe <- as.matrix(table(sub_string[, 2:3]))
+strin_spe<-  string_spe[, (string_spe[1,] == 0 | string_spe[2,] == 0)]
+
+strin_spe <- 
+  as.data.frame(strin_spe)
+
+table(strin_spe[strin_spe$Freq!=0, 1])
+#  specific to myo3 :83, specific to myo5:121
+
+specific_s <- sub_string
+
+# filter with tested PPI only
+prey_tested <- unique(read.csv('~/ancSH3_paper/SupplementaryMaterial/Data/plate1536_complete_paralog.csv')[, 4])[-1]
+sub_string <- sub_string[sub_string$orf %in% prey_tested, ]
+
+
+exp_collapsed <- 
+merge(sub_string, 
+      exp_collapsed, 
+      by = c('orf', 'DHFR12.strain'),
+      all = T)
+
+
+length(unique(exp_collapsed$orf))
+sum(prey_tested %in% exp_collapsed[exp_collapsed$present_string, 'orf'])
+# 146/167 prey tested present in string
+
+
+#MINT database
+library(stringr)
+mint <- read.delim('~/ancSH3_paper/Reviews/SupplementaryMaterial/Data/species_yeastMINT.txt', header = F)
+
+#keep only Myo3 and Myo5 PPIs
+para <- c('P36006', 'Q04439')
+para <- str_c('uniprotkb:', para)
+
+para_mint <- mint[mint$V1 %in% para | mint$V2 %in% para, ]
+
+# retrieve systematic orf name 
+orf.6 <- 
+  str_extract_all(pattern = 'uniprotkb:[Y][A-Z]+.+(locus name)', para_mint[, 6])
+
+orf.6 <- lapply(orf.6, strsplit, split = ':')
+orf.6 <- lapply(orf.6, unlist)
+orf.6 <- lapply(orf.6, '[[', 2)
+orf.6 <- lapply(orf.6, strsplit, split = '(', fixed = T)
+orf.6 <- lapply(orf.6, unlist)
+orf.6 <- lapply(orf.6, '[[', 1)
+
+orf.5 <- 
+  str_extract_all(pattern = 'uniprotkb:[Y][A-Z]+.+(locus name)', para_mint[, 5])
+
+orf.5 <- lapply(orf.5, strsplit, split = ':')
+orf.5 <- lapply(orf.5, unlist)
+orf.5 <- lapply(orf.5, '[[', 2)
+
+orf.5[unlist(lapply(orf.5, is.null))] <- 'none('
+
+orf.5 <- lapply(orf.5, strsplit, split = '(', fixed = T)
+orf.5 <- lapply(orf.5, unlist)
+orf.5 <- lapply(orf.5, '[[', 1)
+
+# verfication of orf systematic name
+orf.6[nchar(orf.6) != 7]
+orf.5[nchar(orf.5) != 7]
+
+orf.5 <- lapply(orf.5, gsub, pattern = 'YSC84', replacement = 'YHR016C')
+orf.6<- lapply(orf.6, gsub, pattern = 'YSC84', replacement = 'YHR016C')
+orf.6 <- lapply(orf.6, gsub, pattern = 'YPK1', replacement = 'YKL126W')
+
+# create PPIs dataframe
+para_mint <- 
+data.frame('p1' = unlist(orf.5),
+           'p2' = unlist(orf.6),
+           'mi_score' = as.numeric(gsub(para_mint$V15, pattern = 'intact-miscore:', replace = '')))
+
+para_mint$DHFR12.strain <- NA
+para_mint[para_mint$p1 %in% c('YKL129C', 'YMR109W'), 4] <- para_mint[para_mint$p1 %in% c('YKL129C', 'YMR109W'), 1]
+para_mint[para_mint$p2 %in% c('YKL129C', 'YMR109W'), 4] <- para_mint[para_mint$p2 %in% c('YKL129C', 'YMR109W'), 2]
+
+para_mint$DHFR12.strain <- 
+  gsub(para_mint$DHFR12.strain, pattern = 'YMR109W', replacement = 'Myo5')
+para_mint$DHFR12.strain <- 
+  gsub(para_mint$DHFR12.strain, pattern = 'YKL129C', replacement = 'Myo3')
+
+
+para_mint$orf <- NA
+para_mint[!(para_mint$p1 %in% c('YKL129C', 'YMR109W')), 5] <- para_mint[!(para_mint$p1 %in% c('YKL129C', 'YMR109W')), 1]
+para_mint[!(para_mint$p2 %in% c('YKL129C', 'YMR109W')), 5] <- para_mint[!(para_mint$p2 %in% c('YKL129C', 'YMR109W')), 2]
+
+for(i in 1:nrow(para_mint)) {
+  if (is.na(para_mint[i, 'orf'])) {
+    if (para_mint[i, 'p1'] == para_mint[i, 'p2']) {
+      para_mint[i, 'orf'] <- para_mint[i, 'p1']
+    }
+    else if (para_mint[i, 'DHFR12.strain'] == 'Myo3') {
+      if (para_mint[i, 'p1'] == 'YKL129C') {
+        para_mint[i, 'orf'] <- para_mint[i, 'p2']
+      } else if (para_mint[i, 'p2'] == 'YKL129C') {
+        para_mint[i, 'orf'] <- para_mint[i, 'p1']
+      }  
+    } else if (para_mint[i, 'DHFR12.strain'] == 'Myo3') {
+      if (para_mint[i, 'p1'] == 'YMR109W') {
+        para_mint[i, 'orf'] <- para_mint[i, 'p2']
+      } else if(para_mint[i, 'p2'] == 'YMR109W') {
+        para_mint[i, 'orf'] <- para_mint[i, 'p1']
+    }
+  }
+}  
+}
+
+# keep unique interaction
+para_mint <-  
+  para_mint[, c(3:5)] %>%
+  dplyr::group_by(DHFR12.strain, orf)%>% unique() 
+
+# establish specific ppi
+mint_spe <- as.matrix(table(para_mint[, 2:3]))
+mint_spe<-  mint_spe[, (mint_spe[1,] == 0 | mint_spe[2,] == 0)]
+
+mint_spe <- 
+  as.data.frame(mint_spe)
+
+table(mint_spe[mint_spe$Freq!=0, 1])
+#  specific to myo3 :12, specific to myo5:43
+para_mint$present_mint<- T
+
+
+#add to summary data frame
+exp_collapsed <- 
+merge(exp_collapsed, 
+      para_mint, 
+      by = c('DHFR12.strain', 'orf'), 
+      all = T)
+
+exp_collapsed <- exp_collapsed[exp_collapsed$orf %in% prey_tested, ]
+
+exp_collapsed$present_biogrid <-!is.na(exp_collapsed$recovered)
+exp_collapsed[, c(4,8,9)] <- 
+  na.replace(exp_collapsed[, c(4,8,9)], replace = F)
+exp_collapsed$recovered <- 
+  na.replace(exp_collapsed$recovered, replace = 'Undetected')
+exp_collapsed <- 
+  exp_collapsed[, c(1,2,5,6,9,4,3,8,7)]
+
+colnames(exp_collapsed)[4] <- 'biogrid_method'
+colnames(exp_collapsed)[c(7,9)] <- c('string_comb.score', 'mint_score')
+
+#create summary column with DB present information (similar as biogrid method)
+
+db <- exp_collapsed[, c(5,6,8)]
+
+db$present_biogrid <- gsub(db$present_biogrid, pattern = TRUE, replacement ='BioGRID')
+db$present_string <- gsub(db$present_string, pattern = TRUE, replacement ='STRING')
+db$present_mint <- gsub(db$present_mint, pattern = TRUE, replacement ='MINT')
+
+x <- apply(as.matrix(db), 1, str_c, simplify = F)
+
+x <- lapply(x, str_remove_all, pattern = 'FALSE')
+
+x <- 
+  lapply(x, str_subset, pattern = '.+')
+
+exp_collapsed$database <- x
+
+# Summary detected in string
+dose.labs <- c('STRING')
+names(dose.labs) <- c(T)
+
+string_p <- 
+ggplot(exp_collapsed[exp_collapsed$present_string & exp_collapsed$recovered != 'Abundance control',])+
+  facet_grid(rows = vars(recovered), cols = vars(present_string), 
+             labeller = labeller(present_string = dose.labs))+
+  geom_histogram(aes(x = string_comb.score, fill = recovered))+
+  scale_fill_manual(values = c('darkcyan', 'grey65'))+
+  theme_bw()+
+  xlab('STRING score')+
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.title = element_blank(), legend.position = 'none', 
+        legend.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size =12), 
+        strip.text = element_text(size =16),
+        strip.background.y = element_blank(),
+        strip.text.y = element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  guides()
+
+# MINT score distribution
+dose.labs <- c('MINT')
+names(dose.labs) <- c(T)
+mint_p <- 
+ggplot(exp_collapsed[exp_collapsed$present_mint & exp_collapsed$recovered != 'Abundance control',])+
+  facet_grid(rows = vars(recovered), cols = vars(present_mint), 
+            labeller = labeller(present_mint = dose.labs))+
+  geom_histogram(aes(x = mint_score, fill =recovered), na.rm = T)+
+  scale_fill_manual(values = c('darkcyan', 'grey65'))+
+  theme_bw()+
+  xlab('MINT score')+
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.title = element_blank(), legend.position = 'none', 
+        legend.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size =12), 
+        strip.text = element_text(size =16), 
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  guides()
+
+# Database comparison
+db_comp <- 
+  ggplot(exp_collapsed, aes(database, fill = recovered))+
+  facet_grid(row = vars(DHFR12.strain))+
+  geom_bar()+
+  theme_bw()+
+  scale_x_upset(n_intersections = 20)+
+  ylab('Reported in PPI databases')+
+  xlab(NULL)+
+  scale_fill_manual(values = c('grey20','darkcyan', 'grey65'), 
+                    labels = c('Abundance control', 'Detected', 'Undetected in this study'))+
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.title = element_blank(), legend.position = 'bottom', 
+        legend.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size =12), 
+        strip.text = element_text(size =16), 
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  guides(fill = guide_legend(nrow = 2))+
+  theme_combmatrix(combmatrix.panel.line.size = 1, 
+                   combmatrix.panel.point.size = 2, 
+                   combmatrix.label.text = element_text(size = 12), 
+                   combmatrix.panel.point.color.fill = 'grey20', 
+                   combmatrix.panel.line.color = 'grey20')
+
+x <- 
+subset(exp_collapsed, 
+       subset = present_biogrid == T & present_mint == T & present_string ==T)
+
+table(x$recovered)
+
+#83/135 detected in all 3 DB
+#Assembly of Figure S2
+library(cowplot)
+
+b <- plot_grid(string_p, mint_p, ncol = 2, rel_widths = c(1, 1.05), labels = c('C', 'D'), label_fontface = 'plain')
+
+t <-
+  plot_grid( db_comp+guides(fill = guide_legend(nrow = 3)), 
+              p4+theme( 
+                     legend.position = 'none'),
+                ncol = 2, rel_widths = c(1,1.2), labels = 'AUTO', label_fontface = 'plain' , axis = 'tb', align = 'h')
+
+
+plot_grid(t, b, nrow = 2, labels = '', label_fontface = 'plain', rel_heights = c(1, 0.7))
+ggsave('~/ancSH3_paper/Reviews/SupplementaryMaterial/FigureS2.png', height = 8.5, width = 10)
+
+# verify specific PPI in each database
+
+strin_spe$string <- T
+mint_spe$mint <- T
+detect_spe$bio_grid <- T
+
+strin_spe <- strin_spe[strin_spe$Freq == 1, ]
+mint_spe <- mint_spe[mint_spe$Freq == 1, ]
+
+strin_spe$PPI <- str_c(strin_spe$DHFR12.strain, strin_spe$orf)
+mint_spe$PPI <- str_c(mint_spe$DHFR12.strain, mint_spe$orf)
+detect_spe$PPI <- str_c(detect_spe$DHFR12.strain, detect_spe$orf)
+
+unique(c(strin_spe$PPI, mint_spe$PPI, detect_spe$PPI))
+
+spe <- 
+merge(detect_spe[, -c(3, 7)], 
+      mint_spe[, -c(3,5)], 
+      by = c('DHFR12.strain', 'orf'),
+      all = T)
+
+spe <- 
+merge(spe, 
+      strin_spe[, -c(3,5)], 
+      by = c('DHFR12.strain', 'orf'),
+      all = T)
+
+
+table(spe$DHFR12.strain)
+#Myo3 = 92, #Myo5 = 143
+
+spe <- 
+merge(spe, 
+      specific_s[, c(1:3)], 
+      by = c('orf', 'DHFR12.strain'), 
+      all.x = T)
+
+spe$tested <- (spe$orf %in% prey_tested)
+
+ggplot(spe)+
+  geom_histogram(aes(x = combined_score, color = tested), na.rm = T)
+
+x <- spe[spe$combined_score > 700 & !is.na(spe$combined_score), ]
+table(x$DHFR12.strain)
+
+spe[spe$bio_grid & !is.na(spe$bio_grid) & spe$combined_score > 700, ]
+
+
+x
 

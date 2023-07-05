@@ -1,7 +1,7 @@
 ######################################
 ## Figure 4                         ##
 ## author : Pascale Lemieux         ##
-## Date : 2023-01-16                ##
+## Date : 2023-06-06                ##
 ######################################
 library(tidyverse)
 library(ggplot2)
@@ -11,7 +11,7 @@ library(viridis)
 library(dplyr)
 library(gtools)
 library(magrittr)
-library(xlsx)
+library(readxl)
 
 firstup <- function(x) {
   substring(x, 2) <- tolower(substring(x, 2))
@@ -21,7 +21,7 @@ firstup <- function(x) {
 #Read Table S7
 
 dockingData <- 
-  read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS7.csv')[, -1]
+  read.csv('~/ancSH3_paper/Reviews/SupplementaryMaterial/TableS7.csv')
 
 # Confirmed motif in vivo
 conf <- 
@@ -44,7 +44,7 @@ dockingData$conf <- na.replace(dockingData$conf, replace = FALSE)
 
 # Read Table S1
 PCA_complete <- 
-  read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS1.csv')[, -1]
+  read_xlsx('~/ancSH3_paper/Reviews/SupplementaryMaterial/TableS1.xlsx')
 
 # Select PCA data only for the extantSH3
 PCA_subset <-  
@@ -84,12 +84,15 @@ merge(rank1,
 
 
 # Figure 4B : Correlation between PPI score & Energy Interaction
+
+colnames(PCA_dock)[6] <- 'Interact'
+
 Fig4B <- 
-ggplot(PCA_dock, aes(x =med.PPI_score , y = cluster_median_Interaction_energy.kcal.mol.))+
+ggplot(PCA_dock, aes(x =med.PPI_score , y = Interact))+
   facet_grid(cols = vars(SH3.Standard_name))+
   geom_point(aes(color = conf), size = 3)+
   scale_color_manual(values = c('grey20', '#e5ca28ff'), 
-                     labels = c('predicted motif', 'confirmed motif'))+
+                    labels = c('predicted motif', 'validated motif'))+
   xlim(0,1)+
   xlab('med. PPI score')+
   ylab(expression(paste('med. ' , Delta, 'G (kcal/mol)')))+
@@ -118,10 +121,10 @@ guides(color = guide_legend(title = "",
                             override.aes = aes(label=''), nrow = 2))
 
 
-
 # Read raw docking result from Data S4
 raw_dG <- 
-  read.csv('~/ancSH3_paper/SupplementaryMaterial/SupplementaryData4/Docking_RD.csv', header = T)
+  read.csv('~/ancSH3_paper/Reviews/SupplementaryMaterial/SupplementaryData4/Docking_RD.csv',
+           header = T, sep = ',')
 
 
 raw_dG$preys <- as.factor(raw_dG$preys)
@@ -234,7 +237,7 @@ kruskal.test(Interaction_Energy ~ SH3, data = c1_ener[c1_ener$SH3 %in% c('Myo3',
 
 
 # Statistical tests with median Energy
-my_comparisons <- list( c("AncC", "Myo3"), c("AncC", "Myo5"), c("Myo3", "Myo5") )
+my_comparisons <- list( c("AncD", "Myo3"), c("AncD", "Myo5"), c("Myo3", "Myo5") )
 
 med_c1_clust <- 
   aggregate(Interaction_Energy~SH3+preys, data = c1_ener, FUN = 'median')
@@ -253,15 +256,14 @@ matrix(unlist(strsplit(x = as.character(med_c1_clust$preys), split = '_', fixed 
 # Figure 4
 Fig4C <- 
 ggplot(med_c1_clust, aes(x = SH3, y = Interaction_Energy))+
-  geom_boxplot( alpha = 0.8, fill = 'grey80',
-   notch = T, size = 1, notchwidth = 0.7, width = 0.4, linewidth = 0.75)+
-  xlim('Myo3', 'AncC', 'Myo5')+
+  geom_violin( alpha = 0.8, fill = 'grey90', size = 1, width = 0.3, linewidth = 0.75)+
+  xlim('Myo3', 'AncD', 'Myo5')+
   ylim(-12, 2)+
   #scale_fill_manual(values = c('#551A8B', '#3366CC', 'orangered'))+
   ylab(expression(paste('med. ',  Delta, 'G (kcal/mol)')))+
   #stat_cor(method = 'spearman', fontface = 'plain', size = 4, label.x = -7.5)+
-  geom_point(aes(color = conf), size = 2, alpha = 0.7)+
-  geom_line(aes(group = preys, color = conf), size =0.7, alpha = 0.7)+
+  geom_jitter(aes(color = conf), size = 2, alpha = 0.7, width = 0.1)+
+  #geom_line(aes(group = preys, color = conf), size =0.7, alpha = 0.7)+
   scale_color_manual(values = c('grey20', '#e5ca28ff'))+
   #geom_line(data = subset(med_c1_clust, preys == 'YHL007C_both'), aes(group = preys) ,color = 'orangered', size = 1)+
   #geom_point(data = subset(med_c1_clust, preys == 'YHL007C_both') ,color = 'orangered', size = 2)+
@@ -273,26 +275,28 @@ ggplot(med_c1_clust, aes(x = SH3, y = Interaction_Energy))+
         legend.text = element_text(size = 16), 
         axis.title = element_text(size =14), 
         panel.grid.major = element_blank(), panel.grid.minor = element_blank())
-
+ggsave('~/ancSH3_paper/Reviews/Figure4C.png', width = 4, height = 4)
 
 # Arrange the Figure 4
 library(cowplot)
 library(svglite)
 
 struc <- ggdraw()+
-  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig4A2.tif')
+  draw_image('~/ancSH3_paper/Reviews/FigurePanels/Fig4A2.tif')
 
 plot_grid(struc, Fig4B, Fig4C, nrow = 1,
           labels = 'AUTO', label_fontface = 'plain', label_size = 16, 
           align = 'h', axis = 'b', rel_widths = c(1,2,1))
 
-ggsave('~/ancSH3_paper/Figure4.svg', width = 14, height = 4)
+ggsave('~/ancSH3_paper/Reviews/Figure4.png', width = 14, height = 4)
+
+
 
 # Arrange Supplementary Figure 4
 
 airs <- 
 ggdraw()+
-  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/FigSupp4A.tif')
+  draw_image('~/ancSH3_paper/Reviews/FigurePanels/FigSupp4A.tif')
 
 
 plot_grid(airs, FigSupp4B, 
@@ -301,7 +305,7 @@ plot_grid(airs, FigSupp4B,
 
            
     
-ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS4.svg', 
+ggsave('~/ancSH3_paper/Reviews/SupplementaryMaterial/FigureS4.svg', 
        width = 12, height = 5)
 
 

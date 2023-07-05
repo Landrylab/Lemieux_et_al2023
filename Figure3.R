@@ -1,7 +1,7 @@
 ######################################
 ## Figure 3                         ##
 ## author : Pascale Lemieux         ##
-## Date : 2023-01-12                ##
+## Date : 2023-06-02                ##
 ######################################
 
 library(ggplot2)
@@ -9,6 +9,7 @@ library(dplyr)
 library(gtools)
 library(viridis)
 library(cowplot)
+library(readxl)
 
 firstup <- function(x) {
   substring(x, 2) <- tolower(substring(x, 2))
@@ -36,13 +37,7 @@ abondance_c <-
 
 # Read Table S1
 PCA_complete <- 
-  read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS1.csv')[, -1]
-
-# Verify that all preys have standard names
-
-PCA_complete[PCA_complete$Prey.Standard_name == '', 'Prey.Standard_name'] <- 
-  firstup(PCA_complete[PCA_complete$Prey.Standard_name == '', 'Prey.Systematic_name'])
-
+  read_xlsx("~/ancSH3_paper/Reviews/SupplementaryMaterial/TableS1.xlsx")
 
 # Figure 3C : all SH3s PPI score heatmap
 
@@ -61,10 +56,11 @@ data <-
   subset(PCA_complete, 
          subset = sh3_sequence %in% c(
            'SH3-depleted',
+           'AncD',
            'AncC',
            'AncB',
            'AncA',
-           'DupSH3',
+           
            'optMyo3',
            'optMyo5',
            'extantMyo3', 
@@ -74,10 +70,11 @@ data <-
 
 data$sh3_sequence <- 
   ordered(as.factor(data$sh3_sequence), levels=c('SH3-depleted',
+                                                 'AncD',
                                                  'AncC',
                                                  'AncB',
                                                  'AncA',
-                                                 'DupSH3','extantMyo3', 
+                                                 'extantMyo3', 
                                                  'extantMyo5',
                                                  'optMyo3', 
                                                  'optMyo5'
@@ -96,25 +93,27 @@ data <-
 
 name <- 
 unique(PCA_complete[order(PCA_complete[ , "med.PPI_score"], decreasing=T),
-                    c(1:4, 16:19)])
+                    c(2,4, 16:18)])
 name <- 
-  name[name$sh3_sequence =='SH3-depleted',]
+  unique(name[name$sh3_sequence =='SH3-depleted', c(1,4)])
 
 sh3dep <- 
-  unique(name[name$SH3_dep, 2])
+  unique(name[name$SH3_dep, 1])
 sh3indep <- 
-  unique(name[!name$SH3_dep, 2])
+  unique(name[!name$SH3_dep, 1])
 sh3indep <- 
   sh3indep[!(sh3indep %in% sh3dep)]
 sh3indep <- 
-  sh3indep[!(sh3indep %in% abondance_c)]
+  unlist(sh3indep)[!(unlist(sh3indep) %in% abondance_c)]
 
 abond<- 
-  unique(name[name$Prey.Standard_name %in% abondance_c, 2])
+  unique(unlist(name[,1])[name$Prey.Standard_name %in% abondance_c])
 
 
-ynam <- unique(c(abond, sh3indep, sh3dep))
+ynam <- unique(unlist(c(abond, sh3indep, sh3dep)))
+ynam <- c(ynam[1:22], 'Cmd1', ynam[27:46], 'Ste20', ynam[47:48], 'Rvs167', 'Osh2')
 
+saveRDS(ynam, file = '~/ancSH3_paper/Reviews/SupplementaryMaterial/Data/ynam.RDS')
 
 hm <- 
 ggplot(data) +
@@ -184,10 +183,10 @@ ggplot(data) +
 
 a <- 
 ggdraw()+
-  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig3A.png', scale = 1)
+  draw_image('~/ancSH3_paper/Reviews/Fig3A.png', scale = 1)
 
 b <- ggdraw()+
-  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig3B.png', scale = 1)
+  draw_image('~/ancSH3_paper/Reviews/Fig3B.png', scale = 1)
 
 left <- 
 plot_grid(a, hm, labels = c('A', 'C'), label_fontface = 'plain', label_size = 16,
@@ -198,7 +197,7 @@ plot_grid(left,
           label_fontface = 'plain', label_size = 16)
 
 
-ggsave(p3, file = '~/ancSH3_paper/Figure3.svg', 
+ggsave(p3, file = '~/ancSH3_paper/Reviews/Figure3.svg', 
       height = 13, width = 13)
 
 # Manual annotation are added for the missing data (grey tiles) and to highlight the

@@ -1,7 +1,7 @@
 ######################################
-## Figure 5 & FigureS5              ##
+## Figure 5 & Figure S9              ##
 ## author : Pascale Lemieux         ##
-## Date : 2023-01-16                ##
+## Date : 2023-06-02                ##
 ######################################
 
 library(gtools)
@@ -19,37 +19,20 @@ library(cowplot)
 # at those concentrations 
 # output file from PCA_analysis_freeSH3.R
 sdata <- 
-  readRDS('~/ancSH3_paper/SupplementaryMaterial/SupplementaryData1/free_SH3_RD/MTX2data_free_SH3.rds')
-
-sdata$motif_deletion <- grepl(sdata$preys, pattern = 'd.', fixed = T)
-sdata$preys <- gsub(sdata$preys, pattern = 'd.', replacement = '', fixed = T)
-
-
-ref <- 
-  data.frame(
-    Prey.Systematic_name = c("YBL007C",   "YDL019C",   "YFR024C-A", "YHL007C",   "YHR114W",   "YMR109W",   "YOL100W"),
-    Prey.Standard_name = c('Sla1', 'Osh2', 'Lsb3', 'Ste20', 'Bzz1', 'Myo5', 'Pkh2'))
-
-colnames(sdata)[c(1:4, 21, 23)] <- c('sh3_sequence', 'Prey.Systematic_name', 'DHFR12_tag', 'estradiol', 'med.PPI_score', 'motif_deletion')
-
-sdata <- 
-merge(sdata, 
-      ref, 
-      by = 'Prey.Systematic_name')
-
+  readRDS('~/ancSH3_paper/Reviews/SupplementaryMaterial/SupplementaryData1/SupplementaryData1_freeSH3.rds')
 
 # Keep data of wt preys, discard delta motifs preys
 udata <- 
-  unique(sdata[!(sdata$motif_deletion), c(1:4, 21, 23,24)])
+  unique(sdata[, c(1:6, 20)])
 
 # Create the dataframe with estradiol concentration as columns
 
 difdata <- 
-  pivot_wider(udata, names_from = `estradiol`, values_from = med.PPI_score, names_sort = T)
+  pivot_wider(udata, names_from = `[estradiol]`, values_from = med.PPI_score, names_sort = T)
 
 # Keep data of delta motif preys
 ddata <- 
-  unique(sdata[sdata$motif_deletion, c(1:4, 21, 23,24)])
+  unique(sdata[sdata$motif_deletion, c(1:6, 20)])
 
 ddata$DHFR12_tag <- factor(ddata$DHFR12_tag , 
                              levels = c('C', 'N'), 
@@ -59,6 +42,7 @@ ddata$DHFR12_tag <- factor(ddata$DHFR12_tag ,
 # max slope of PPI score ~ [estradiol]
 j = 'difdata'
 z <- get(j)
+z <- z[!z$motif_deletion,]
 y <- matrix()
 
 # Compute the slope between [estradiol] and [estradiol + 2levels]
@@ -95,6 +79,8 @@ colnames(z)[13] <- 'estradiol'
 
 # Merge with the data to keep only the optimal 
 # [estradiol] PPI score for each prey
+colnames(udata)[6] <- 'estradiol'
+
 i <-
   merge(
     udata,
@@ -117,12 +103,14 @@ difdata$DHFR12_tag <- factor(difdata$DHFR12_tag,
                            labels = c('C-tag', 'N-tag'))
 
 # write the csv file for this dataset
-write.csv2(difdata, file = '~/ancSH3_paper/SupplementaryMaterial/Data/free_sh3_data/ppi_score_est_adj.csv', 
+write.csv2(difdata, file = '~/ancSH3_paper/Reviews/SupplementaryMaterial/Data/ppi_score_est_adj.csv', 
            fileEncoding = 'UTF-8')
 
 
 # Create the wide form of the data frame to contain wt.prey 
 # and dmotif.prey scores in different columns
+colnames(ddata)[6] <- 'estradiol'
+
 dif_pxxp <- 
 merge(difdata, 
       ddata, 
@@ -138,7 +126,7 @@ merge(difdata,
 dif_pxxp %<>%
   mutate(dif_motif = med.PPI_score.wt -med.PPI_score.delta)
 
-write.csv2(dif_pxxp, file = '~/Maitrise/PCA_DHFR_array/PCA_SH3_libre/ppi_score_est_adj.csv', 
+write.csv2(dif_pxxp, file = '~/ancSH3_paper/Reviews/SupplementaryMaterial/Data/ppi_score_est_adj.csv', 
            row.names = F, fileEncoding = 'UTF-8')
 
 # Merge all data points with the optimal [estradiol]
@@ -147,6 +135,7 @@ sdata$DHFR12_tag <- factor(sdata$DHFR12_tag,
                              levels = c('C', 'N'), 
                              labels = c('C-tag', 'N-tag'))
 
+colnames(sdata)[6] <- 'estradiol'
 
 cdata <- 
   merge(sdata, 
@@ -167,16 +156,16 @@ difdata[difdata$sh3_sequence == 'emptyLP', ] %>%
 
 # Prepare cdata to format the figure
 
-cdata$sh3_sequence <- factor(cdata$sh3_sequence, 
-                    levels = c('emptyLP', 'AncC', 'AncB', 
-                               'AncA', 'Dup3', 'Dup2', 'DupSH3', 'optMyo3', 'optMyo5', 
-                               'extantMyo3', 'extantMyo5'))
+#cdata$sh3_sequence <- factor(cdata$sh3_sequence, 
+#                    levels = c('emptyLP', 'AncD', 'AncC', 'AncB', 
+#                               'AncA', 'A', 'Dup2', 'DupSH3', 'optMyo3', 'optMyo5', 
+#                               'extantMyo3', 'extantMyo5'))
 cdata$estradiol.all <- 
   as.numeric(paste(cdata$estradiol.all))
 
 # Compare the noise in the experiment with the 
 # emptyLP tagged in C and in N
-compare_means(med.PPI_score.cor ~ DHFR12_tag, cdata[cdata$sh3_sequence == 'emptyLP', c(2,3,4,27)])
+compare_means(med.PPI_score.cor ~ DHFR12_tag, cdata[cdata$sh3_sequence == 'emptyLP', ], method = 'wilcox.test')
 # A tibble: 1 × 8
 #.y.               group1 group2        p   p.adj p.format p.signif method  
 #<chr>             <chr>  <chr>     <dbl>   <dbl> <chr>    <chr>    <chr>   
@@ -185,10 +174,13 @@ compare_means(med.PPI_score.cor ~ DHFR12_tag, cdata[cdata$sh3_sequence == 'empty
 cdata[cdata$estradiol.all == 0, "estradiol.all"] <- 0.99
 #na.replace(cdata$estradiol.all, replace = 0.99)
 
+cdata$estradiol.cor <- 
+as.numeric(paste(cdata$estradiol.cor))
+
 Fig5SuppB <- 
 ggplot(cdata[!cdata$motif_deletion.all, ])+
   facet_grid(vars(Prey.Standard_name), vars(DHFR12_tag))+
-  geom_vline(aes(xintercept = as.numeric(paste(estradiol.cor))), alpha = 0.4, size = 2)+
+  geom_vline(aes(xintercept = estradiol.cor), alpha = 0.4, size = 2)+
   geom_line(aes(x = as.numeric(estradiol.all),
                 y = med.PPI_score.all, 
                 color = sh3_sequence,
@@ -219,7 +211,8 @@ ggplot(cdata[!cdata$motif_deletion.all, ])+
 # Supplementary Figure 5B : Comparison of PCA score from complete paralog vs free sh3 
 
 # Import Table S2
-dcomp_para <- read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS2.csv')[, -1]
+library(readxl)
+dcomp_para <- read_xlsx('~/ancSH3_paper/Reviews/SupplementaryMaterial/TableS2.xlsx')
 
 dcomp_para <- 
   pivot_wider(unique(dcomp_para[dcomp_para$sh3_sequence != 'UNI1' , c(2,3,4,5, 20)]), 
@@ -239,7 +232,8 @@ comp <-
               values_from = med.PPI_score, 
               names_from = sh3_sequence)
 
-comp <- comp[comp$DHFR12_tag == 'C-tag', c("Prey.Standard_name", "optMyo3", "optMyo5")]
+comp <- comp[c(comp$DHFR12_tag == 'C-tag'& !comp$motif_deletion) , 
+             c("Prey.Standard_name", "optMyo3", "optMyo5")]
 comp$exp <- 'free'
 
 # combine both data frame
@@ -292,16 +286,21 @@ panel.grid.major = element_blank(), panel.grid.minor = element_blank()
   
 
 
+
 # Demonstrating that the proline motif deletion affects in the same
 # way the PPI between the free SH3s and the preys vs SH3s-paralogues 
 dcomp_para %>%
 mutate(dPPI_score = extantPreyFALSE - difmotifTRUE) ->dcomp_para
 
 # Merge the free SH3s data and the SH3-paralogue data
+dif_pxxp <- dif_pxxp[!(dif_pxxp$motif_deletion.wt), ]
+
 comp <- 
   merge(dif_pxxp, 
         dcomp_para, 
         by = c( 'Prey.Standard_name','sh3_sequence'))
+
+comp
 
 Fig5SuppC <- 
 ggplot(comp[comp$sh3_sequence %in% c('optMyo3', 'optMyo5'), ],
@@ -342,10 +341,6 @@ ggplot(comp[comp$sh3_sequence %in% c('optMyo3', 'optMyo5'), ],
   )+
   guides(color =  guide_legend(title = 'Prey', ncol = 1))
 
-# Significant correlation observed 
-# r = 0.89 p=0.012 optMyo3 free vs optMyo3-Myo3p
-# r = 0.64 p=0.14 optMyo5 free vs optMyo5-Myo5p
-
 
 
 #heatmap ppi score for mat supp
@@ -380,7 +375,7 @@ ggplot(difdata) +
     y = Prey.Standard_name ,
     fill = (med.PPI_score)
   )) +
-  scale_x_discrete(limits = c('emptyLP', 'AncC', 'AncB', 'AncA', 'DupSH3', 'optMyo3', 'optMyo5'))+
+  scale_x_discrete(limits = c('emptyLP', 'AncD','AncC', 'AncB', 'AncA', 'optMyo3', 'optMyo5'))+
   scale_fill_viridis(option = 'mako')+
   theme_bw() +
   theme(
@@ -402,7 +397,7 @@ ggplot(difdata) +
 
 
 figdata <- 
-cdata[cdata$sh3_sequence %in% c('AncC', 'optMyo3', 'optMyo5') &
+cdata[cdata$sh3_sequence %in% c('AncD', 'optMyo3', 'optMyo5') &
                 cdata$DHFR12_tag== 'C-tag', ]
 
 figdata[!figdata$motif_deletion.all, ] %>%
@@ -411,11 +406,10 @@ dplyr::filter(estradiol.all == estradiol.cor)-> figdata
 
 figdata$sh3_sequence<- 
   factor(figdata$sh3_sequence, 
-         levels = c( 'AncC', 'optMyo3', 'optMyo5'))
+         levels = c( 'AncD', 'optMyo3', 'optMyo5'))
 
-#norm = PPI score
 Fig5C <- 
-ggplot(figdata, aes(Prey.Standard_name, norm))+
+ggplot(figdata, aes(Prey.Standard_name, PPI_score))+
   geom_boxplot(aes(fill = sh3_sequence), width = 0.5, alpha = 0.8)+
   scale_fill_manual(values= c('#551A8B', '#3366CC', 'orangered'))+
   stat_compare_means(aes(group = sh3_sequence), label = 'p.signif', label.y = 0.92)+
@@ -439,7 +433,7 @@ ggplot(figdata, aes(Prey.Standard_name, norm))+
 # Figure 5 assembly
 Fig5A <- 
   ggdraw()+
-  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig5A.png')
+  draw_image('~/ancSH3_paper/Reviews/FigurePanels/Fig5A.png')
 
 
 fig5 <- 
@@ -447,12 +441,12 @@ plot_grid(Fig5A, Fig5B, Fig5C,labels = 'AUTO', label_fontface = 'plain',
           label_size = 16, ncol = 3, rel_widths = c(1,1,1))
 
 library(svglite)
-ggsave(fig5, file='~/ancSH3_paper/Figure5.svg', width = 12.5, height = 4.5)
+ggsave(fig5, file='~/ancSH3_paper/Reviews/Figure5.svg', width = 12.5, height = 4.5)
 
 # Supplementary Figure 5 assembly
 
 FigSuppA <- 
-  readRDS(file = '~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppFig5A.rds')
+  readRDS(file = '~/ancSH3_paper/Reviews/FigurePanels/SuppFig5A.rds')
 
 
 left <- 
@@ -493,7 +487,7 @@ plot_grid(tleft, Fig5SuppB+theme(legend.text = element_text(size = 14),
           label_fontface = 'plain', label_size = 16)
 
 
-ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS5.svg', width = 18, height = 14)
+ggsave('~/ancSH3_paper/Reviews/SupplementaryMaterial/FigureS9.svg', width = 18, height = 14)
 
 
 

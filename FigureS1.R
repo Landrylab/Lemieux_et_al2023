@@ -13,7 +13,7 @@ read.table('~/ancSH3_paper/SupplementaryMaterial/SupplementaryData2/Ancestral_Ma
 
 # Keep nodes of interest (Dup, AncA, AncB, AncC)
 Node <- c('N156', 'N149', 'N140', 'N105')
-title <- factor(c('DupSH3', 'AncA', 'AncB', 'AncC'), levels = c('DupSH3', 'AncA', 'AncB', 'AncC'))
+title <- factor(c('AncA', 'AncB', 'AncC', 'AncD'), levels = c('AncA', 'AncB', 'AncC', 'AncD'))
 
 Anc <- 
   anc_p[anc_p$Node %in% c('N156', 'N149', 'N140', 'N105'),  ]
@@ -48,7 +48,7 @@ ggsave(prob, filename = '~/ancSH3_paper/SupplementaryMaterial/FigurePanels/SuppF
 library(ggmsa)
 library(seqinr)
 
-sh3_sequences <-paste0("~/ancSH3_paper/SupplementaryMaterial/SupplementaryFiles1/myo3.myo5.sh3sequence.fasta")
+sh3_sequences <-paste0("~/ancSH3_paper/SupplementaryMaterial/SupplementaryData2/myo3.myo5.sh3sequence.fasta")
 protein_sequences <- system.file("extdata", "sample.fasta", package = "ggmsa")
 
 # MSA ancestral sequence

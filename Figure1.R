@@ -1,7 +1,7 @@
 ######################################
-## Figure 1 & Figure S3             ##
+## Figure 1 & Figure S7             ##
 ## author : Pascale Lemieux         ##
-## Date : 2023-01-12                ##
+## Date : 2023-06-02                ##
 ######################################
 
 library(ggplot2)
@@ -14,7 +14,7 @@ library(ggrepel)
 library(magrittr)
 library(viridis)
 library(gtools)
-library(xlsx)
+library(readxl)
 
 firstup <- function(x) {
   substring(x, 2) <- tolower(substring(x, 2))
@@ -23,7 +23,7 @@ firstup <- function(x) {
 
 # Import Table S1
 data <-
-  read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS1.csv')[,-1]
+  read_xlsx('~/ancSH3_paper/Reviews/SupplementaryMaterial/TableS1.xlsx')
 
 # Import abundance controls information
 abondance_c <-
@@ -64,18 +64,20 @@ motif_conf <-
 stuf <- subset(data,
                subset = sh3_sequence %in% c('optMyo3', 'optMyo5', 'SH3-depleted'))
 
+stuf$Low_Rep <- stuf$n.bio_rep <=2
+
 stuf$sh3_sequence <- 
   factor(stuf$sh3_sequence, 
          levels = c('optMyo3', 'optMyo5', 'SH3-depleted'), 
          labels = c('opt', 'opt', 'SH3-depleted'))
 
 
-wilcox.test(PPI_score ~ sh3_sequence, stuf)
+wilcox.test(med.PPI_score ~ sh3_sequence, stuf)
 
 data_stuf <-
-  pivot_wider(unique(stuf[, c(1:4, 16,17,19)]),
+  pivot_wider(unique(stuf[, c(1:4, 16:19)]),
               names_from = sh3_sequence,
-              values_from = c(med.PPI_score, SH3_dep, Low_Rep))
+              values_from = c(med.PPI_score, SH3_dep, Low_Rep, optSH3_dif))
 
 # Remove data containing NAs values for SH3-depleted PPI score
 data_stuf <- 
@@ -141,7 +143,7 @@ p1 <-
 #Figure 1D : proline motif prediction
 #Import Table S5
 pred_motif <- 
-  read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS5.csv')[, -1]
+  read.csv('~/ancSH3_paper/Reviews/SupplementaryMaterial/TableS5.csv')[, -1]
 
 data_stuf %<>% 
   mutate(deltaPPI = med.PPI_score_opt - `med.PPI_score_SH3-depleted`)
@@ -160,9 +162,11 @@ pred_motif <-
 
 colnames(pred_motif)[16] <- 'p-value'
 
+pred_motif$p.value <- as.numeric(pred_motif$p.value)
+
 p2 <- 
 ggplot(pred_motif,
-       aes(Max_MSS, deltaPPI, color = `p-value`))+
+       aes(Max_MSS, deltaPPI, color = p.value))+
   facet_grid(cols = vars(Bait.Standard_name))+
   theme_bw()+
   geom_point(size = 3)+
@@ -172,10 +176,10 @@ ggplot(pred_motif,
   scale_color_gradientn(colours = c('#0B0405FF', '#2E1E3CFF', '#413D7BFF', '#37659EFF', '#348FA7FF', '#40B7ADFF', '#8AD9B1FF', '#DEF5E5FF'),
                         trans = 'log', breaks=c(0,0.001, 0.01,0.1, 1))+
   ylab(bquote(atop(''*Delta~'('~PPI[opt]~ - ~PPI[depleted]~')', 'med. score')))+
-  xlab('Max MSS score')+
+  xlab('maximum MSS')+
   ylim(0,1)+
   xlim(0,1)+
-  #scale_x_continuous(trans = 'log10', breaks = c(0.3,0.5,0.6, 0.7, 0.8, 0.9, 1))+
+  scale_x_continuous(trans = 'log10', breaks = c(0.3,0.5,0.6, 0.7, 0.8, 0.9, 1))+
   geom_smooth(method = 'glm', color = 'orangered', fill = 'grey65')+
   geom_text_repel(data=pred_motif[pred_motif$Prey.Standard_name %in% motif_conf, ],
     aes(label = Prey.Standard_name),
@@ -202,13 +206,12 @@ ggplot(pred_motif,
      legend.key.width = unit(1.2, 'cm'))#+
   #guides(color = guide_legend(title.hjust = -0.3))
 
-viridis(n=n, option = LETTERS[7])
 
 
 # Figure 1E: proline motif confirmation PCA
 # Import Table S2
 data_motif <- 
-  read.csv('~/ancSH3_paper/SupplementaryMaterial/TableS2.csv')[, -1]
+  read_xlsx('~/ancSH3_paper/Reviews/SupplementaryMaterial/TableS2.xlsx')
 
 data_motif <- 
 subset(data_motif, 
@@ -229,7 +232,6 @@ data_motif_w %<>%
   
 data_fig <- 
   subset(data_motif, sh3_sequence %in% c('extantMyo3', 'extantMyo5'))
-
 p3 <- 
 ggplot(data_fig, aes(x=Prey.Standard_name, y = PPI_score, 
                      fill = motif_deletion))+
@@ -263,7 +265,7 @@ ggplot(data_fig, aes(x=Prey.Standard_name, y = PPI_score,
 library(cowplot)
 library(svglite)
 # Network created with cytoscape and modified by inkscape
-network <- c('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig1A.png')
+network <- c('~/ancSH3_paper/Reviews/FigurePanels/Fig1A.png')
 a <- 
   ggdraw()+
   draw_image(network)
@@ -286,10 +288,10 @@ left <- plot_grid(p1+theme(legend.text = element_text(size = 14),
 
 
 b <- ggdraw()+
-  draw_image('~/ancSH3_paper/SupplementaryMaterial/FigurePanels/Fig1B.png')
+  draw_image('~/ancSH3_paper/Reviews/FigurePanels/Fig1B.png')
 
 right <- 
-  plot_grid(b, a, 
+  plot_grid(a, b, 
                    labels = c('A', 'C'), 
                    rel_heights = c(1, 4), 
                    label_size = 16, label_fontface = 'plain', 
@@ -300,7 +302,7 @@ plot_grid(right, left,
           label_size = 16, label_fontface = 'plain', 
           align = 'h',axis = 't', rel_widths = c(1, 1.1))
 
-ggsave('~/ancSH3_paper/Figure1.svg', 
+ggsave('~/ancSH3_paper/Reviews/Figure1.svg', 
        height = 13, width = 15)
 
 
@@ -310,11 +312,11 @@ ggsave('~/ancSH3_paper/Figure1.svg',
 
 data_motif$sh3_sequence <- 
   factor(data_motif$sh3_sequence, 
-         levels = c('extantMyo3', 'extantMyo5', 'optMyo3', 'optMyo5', 'AncC', 'SH3-depleted'), 
-         labels = c('extantSH3', 'extantSH3', 'optSH3', 'optSH3', 'AncC', 'SH3-depleted') )
+         levels = c('extantMyo3', 'extantMyo5', 'optMyo3', 'optMyo5', 'AncD', 'SH3-depleted'), 
+         labels = c('extantSH3', 'extantSH3', 'optSH3', 'optSH3', 'AncD', 'SH3-depleted') )
 
 sf3c<-
-  ggplot(data_motif[data_motif$sh3_sequence %in% c('AncC', 'SH3-depleted'),],
+  ggplot(data_motif[data_motif$sh3_sequence %in% c('AncD', 'SH3-depleted'),],
          aes(x=Prey.Standard_name, y = PPI_score, fill = motif_deletion))+
   facet_grid(rows= vars(Bait.Standard_name), 
              cols = vars(sh3_sequence))+
@@ -350,17 +352,17 @@ library(ggplot2)
 #bzz1, lsb3, Myo5, Osh2, pkh2, ste20, sla1
 
 prot <- 
-  get_features('P38822 P43603 Q04439 Q12451 Q12236 Q03497 P32790')
+  get_features('P38822 P43603 Q04439 P36006 Q12451 Q12236 Q03497 P32790')
 
 # create the sequence annotation for pxxp motifs
 # predicted max motif
 prey <- 
-  toupper(c('bzz1', 'lsb3', 'Myo5', 'Osh2', 'pkh2', 'ste20', 'sla1'))
+  toupper(c('bzz1', 'lsb3', 'Myo5', 'Myo3','Osh2', 'pkh2', 'ste20', 'sla1'))
 
 #566-575, 196-205, 1072-1081, 771-780, 633-642, 474-483, 620-629
 
-begin <- c(566, 196, 1072, 771, 633, 474, 620)
-end <- c(575, 205, 1081, 780, 642, 483, 629)
+begin <- c(566, 196, 1072,1108,  771, 633, 474, 620)
+end <- c(575, 205, 1081, 1117, 780, 642, 483, 629)
 
 max_motif <- 
   data.frame(prey, begin, end)
@@ -425,20 +427,35 @@ p <-
   draw_canvas(data_prot)+
   theme_bw()
 
+data_prot$entryName <- factor(data_prot$entryName, 
+                              levels = c("OSH2_YEAST",  "MYO3_YEAST", "MYO5_YEAST", "SLA1_YEAST",  "PKH2_YEAST", "STE20_YEAST", "BZZ1_YEAST",  "LSB3_YEAST"), 
+                              labels = c('Osh2', 'Myo3', 'Myo5', 'Sla1', 'Pkh2', 'Ste20', 'Bzz1', 'Lsb3'))
+
+
+data_prot[grepl(data_prot$description, pattern = 'SH3'), 'description'] <- 'SH3'
+
+data_prot[grepl(data_prot$description, pattern = 'IQ'), 'description'] <- 'IQ'
+
 p <- 
-  draw_chains(p, data_prot, fill = 'grey20', 
-              labels = c('Sla1', 'Bzz1', 'Lsb3', 'Ste20', 'Myo5', 'Pkh2', 'Osh2'))
+  draw_chains(p, data_prot, fill = 'grey30', outline = 'grey30')#, 
+              #labels = c('Osh2', 'Pkh2', 'Myo5', 'Ste20', 'Lsb3', 'Bzz1','Myo3', 'Sla1'))
 
 data_prot[data_prot$type == 'MOTIF', "end"] <- 
 data_prot[data_prot$type == 'MOTIF', "end"]+3
 
 data_prot[data_prot$type == 'MOTIF', "begin"] <- 
   data_prot[data_prot$type == 'MOTIF', "begin"]-3
+p <- 
+draw_domains(p, data_prot, label_domains = F)+
+  scale_fill_viridis(option = 'B', discrete = T)
 
 sf3b <- 
-  draw_motif(p, data_prot)+
-  scale_fill_manual(values = c('#e5ca28ff', 'grey65'), labels = c('Max MSS motif', 'proline motif (PXXP)'))+
-  theme(panel.grid.minor=element_blank(), 
+  draw_motif(p, data_prot[data_prot$type == 'MOTIF', ])+
+  scale_fill_manual(values = c('#fcffa4','#fac228', '#f57d15', '#d44842', '#9f2a63',  '#65156e', '#280b53','black', 'darkcyan', 'grey75'), 
+                    breaks = c('CRIB', 'F-BAR', 'IQ', 'Myosin motor', 'PH', 'Protein kinase', 'SH3', 'TH1', 'max motif prediction', 'proline motif'))+ 
+                    #labels = c('Max MSS motif', 'proline motif (PXXP)'))+
+  theme_bw()+
+    theme(panel.grid.minor=element_blank(), 
         panel.grid.major=element_blank()) +
   theme(axis.ticks = element_blank(), 
         axis.text.y = element_blank()) +
@@ -451,18 +468,24 @@ sf3b <-
         legend.text = element_text(size = 16), 
         axis.title = element_text(size =16))
 
+sub_myo <- 
+  data_prot[data_prot$entryName %in% c('Myo3', 'Myo5'), ]
+
+sub_myo[sub_myo$description == 'TH1' , ]
+#end at pos961used to delimit the disordered region included in AF multimer
+
 # Supplementary Figure 3A : correlation PPI score and prediction score
 sf3a <- 
 ggplot(pred_motif,
-       aes(Max_MSS, med.PPI_score_opt, color = `p-value`))+
+       aes(Max_MSS, med.PPI_score_opt, color = p.value))+
   facet_grid(cols = vars(Bait.Standard_name))+
   theme_bw()+
   geom_point(size = 3)+
   stat_cor(size = 5, method = 'spearman', cor.coef.name = c('r'))+
   scale_color_gradientn(colours = c('#0B0405FF', '#2E1E3CFF', '#413D7BFF', '#37659EFF', '#348FA7FF', '#40B7ADFF', '#8AD9B1FF', '#DEF5E5FF'),
-                        trans = 'log', breaks=c(0,0.001, 0.01,0.1, 1))+
+                        trans = 'log', breaks=c(0,0.001, 0.01,0.1, 1), name = 'p-value')+
   ylab('med.optSH3 PPI score')+
-  xlab('Max MSS score')+
+  xlab('maximum MSS')+
   ylim(0,1)+
   xlim(0,1)+
   geom_smooth(method = 'glm', color = 'orangered', fill = 'grey65')+
@@ -490,8 +513,7 @@ ggplot(pred_motif,
               legend.key.height  = unit(0.4, 'cm'),
               legend.key.width = unit(1.2, 'cm'))
 
-# Assembly of Figure S3
-
+# Assembly of Figure S7
 
 side <-
   plot_grid(sf3a+theme(legend.key.height  = unit(0.4, 'cm'),
@@ -510,6 +532,6 @@ plot_grid(side,
           labels = c('', 'C'), rel_widths = c(1, 0.9))
 
 
-ggsave('~/ancSH3_paper/SupplementaryMaterial/FigureS3.svg', 
-       width = 13, height = 7.5)
+ggsave('~/ancSH3_paper/Reviews/SupplementaryMaterial/FigureS7.svg', 
+       width = 14, height = 7.5)
 
